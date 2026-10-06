@@ -3,5 +3,19 @@
   "private": true,
   "license": "MIT",
   "description": "Envio HyperIndex for Plenum events on Monad testnet",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "config": "node scripts/config.mjs",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "envio": "3.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "typescript": "7.0.2"
+  }
 }

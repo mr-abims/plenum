@@ -1,0 +1,110 @@
+# SPEC §11 entities (plus A3). Amounts are A-Token base units (6 decimals); units have 12 decimals.
+
+type Plenum {
+  id: ID! # plenum address
+  name: String!
+  templateId: Int!
+  mandate: String!
+  governance: String!
+  gateway: String!
+  createdAt: BigInt!
+  memberCount: Int!
+  totalUnits: BigInt!
+  paused: Boolean!
+  members: [Member!]! @derivedFrom(field: "plenum")
+  managerActions: [ManagerAction!]! @derivedFrom(field: "plenum")
+  proposals: [Proposal!]! @derivedFrom(field: "plenum")
+  refusals: [ComplianceRefusal!]! @derivedFrom(field: "plenum")
+  navReports: [NavReport!]! @derivedFrom(field: "plenum")
+  activity: [Activity!]! @derivedFrom(field: "plenum")
+}
+
+# Maps a per-group gateway or governance clone back to its plenum.
+type ContractLink {
+  id: ID! # clone address
+  plenum_id: String!
+  kind: String! # GATEWAY | GOVERNANCE
+}
+
+type Member {
+  id: ID! # plenum-member
+  plenum: Plenum!
+  address: String!
+  encPubKey: String!
+  units: BigInt!
+  contributed: BigInt!
+  redeemed: BigInt!
+  joinedAt: BigInt!
+}
+
+type ManagerAction {
+  id: ID!
+  plenum: Plenum!
+  actionsHash: String!
+  rationaleHash: String!
+  modelId: String!
+  reason: String!
+  refused: Boolean!
+  txHash: String!
+  timestamp: BigInt!
+}
+
+type Proposal {
+  id: ID! # governance-proposalId
+  plenum: Plenum!
+  proposalId: BigInt!
+  actionsHash: String!
+  rationaleHash: String!
+  approvals: Int!
+  executed: Boolean!
+  createdAt: BigInt!
+  executedAt: BigInt
+  approvalsList: [Approval!]! @derivedFrom(field: "proposal")
+}
+
+type Approval {
+  id: ID!
+  proposal: Proposal!
+  member: String!
+  timestamp: BigInt!
+}
+
+type ComplianceRefusal {
+  id: ID!
+  plenum: Plenum!
+  account: String!
+  reason: String!
+  txHash: String!
+  timestamp: BigInt!
+}
+
+type NavReport {
+  id: ID!
+  plenum: Plenum!
+  nav: BigInt!
+  reportTimestamp: BigInt!
+  source: String! # CRE | FALLBACK
+  txHash: String!
+}
+
+type ConsentGrant {
+  id: ID! # grant id
+  member: String!
+  grantee: String!
+  scopeHash: String!
+  expiry: BigInt!
+  revoked: Boolean!
+  grantedAt: BigInt!
+}
+
+# One row per member-facing event, newest first in the app's feed (RP-1).
+type Activity {
+  id: ID!
+  plenum: Plenum!
+  kind: String! # CONTRIBUTED | REDEEMED | JOINED | REFUSED | MANAGER_ACTION | ESCALATED | APPROVED | EXECUTED | PAUSED | UNPAUSED | NAV | ADAPTER
+  actor: String!
+  amount: BigInt
+  detail: String!
+  txHash: String!
+  timestamp: BigInt!
+}
