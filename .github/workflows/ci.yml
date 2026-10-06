@@ -67,6 +67,9 @@ jobs:
         working-directory: contracts
         run: forge build
 
+      - name: Indexer codegen
+        run: pnpm --filter @plenum/indexer codegen
+
       - name: Typecheck
         run: pnpm --filter @plenum/agent typecheck && pnpm --filter @plenum/crypto typecheck && pnpm --filter @plenum/indexer typecheck
 
