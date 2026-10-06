@@ -76,6 +76,9 @@ jobs:
       - name: Data-room crypto tests
         run: pnpm --filter @plenum/crypto test
 
+      - name: CRE workflow (typecheck + NAV tests)
+        run: pnpm --filter @plenum/cre typecheck && pnpm --filter @plenum/cre test
+
       - name: Unit tests
         run: pnpm --filter @plenum/agent test
 

@@ -3,5 +3,20 @@
   "private": true,
   "license": "MIT",
   "description": "Chainlink CRE NAV workflow (fund administrator)",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "abis": "node scripts/abis.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "compile": "bun x cre-compile plenum-nav/main.ts dist/plenum-nav.wasm"
+  },
+  "dependencies": {
+    "@chainlink/cre-sdk": "1.23.0",
+    "viem": "2.57.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  }
 }
