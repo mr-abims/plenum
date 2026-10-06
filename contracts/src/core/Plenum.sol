@@ -164,6 +164,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
             Action calldata act = actions[k];
             if (!m.isAllowed(act.adapter)) revert PolicyViolation(Reason.ADAPTER_NOT_ALLOWED);
             IAssetAdapter adapter = IAssetAdapter(act.adapter);
+            uint256 result;
             if (act.op == Op.Deposit) {
                 IERC20(aToken).forceApprove(act.adapter, act.assets);
                 adapter.deposit(act.assets);
@@ -171,10 +172,11 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
             } else if (act.op == Op.Withdraw) {
                 adapter.withdraw(act.assets);
             } else if (act.op == Op.RequestRedeem) {
-                adapter.requestRedeem(act.assets);
+                result = adapter.requestRedeem(act.assets);
             } else {
-                adapter.claim(act.assets);
+                result = adapter.claim(act.assets);
             }
+            emit ActionExecuted(act.adapter, act.op, act.assets, result);
         }
     }
 

@@ -69,19 +69,61 @@ contract MandateTest is Fixture {
         assertEq(uint8(mandate.check(a)), uint8(Reason.WEIGHT_OUT_OF_BAND));
     }
 
-    function test_liquidityFloor_afterDriftDilutesCash() public {
-        aToken.mint(address(this), 600 * USD);
-        aToken.approve(address(credit), 600 * USD);
-        credit.accrue(address(plenum), 600 * USD); // cash 2,000 / 10,600 = 18.9%
-        assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.LIQUIDITY_FLOOR));
-    }
-
-    function test_weightOutOfBand_afterDrift() public {
+    function _driftCredit() internal {
         _execute(_one(address(tbill), Op.Withdraw, 500 * USD)); // T-bill 40%, cash 25%
         aToken.mint(address(this), 600 * USD);
         aToken.approve(address(credit), 600 * USD);
-        credit.accrue(address(plenum), 600 * USD); // credit 24.5%, cash 23.6%
-        assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.WEIGHT_OUT_OF_BAND));
+        credit.accrue(address(plenum), 600 * USD); // credit 2,600 / 10,600 = 24.5% (band 17-23), cash 23.6%
+    }
+
+    function test_noWorse_driftDoesNotBlockUnrelatedTrades() public {
+        _driftCredit();
+        assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.OK));
+        // Gold 1,500 -> 1,700 (16.0%, band 12-18), cash 23.6% -> 21.7%: credit untouched, so no worse.
+        assertEq(uint8(mandate.check(_one(address(gold), Op.Deposit, 200 * USD))), uint8(Reason.OK));
+    }
+
+    function test_noWorse_cannotPushDriftedSleeveFurther() public {
+        _driftCredit();
+        assertEq(uint8(mandate.check(_one(address(credit), Op.Deposit, 100 * USD))), uint8(Reason.WEIGHT_OUT_OF_BAND));
+    }
+
+    function test_noWorse_creditDriftFixedInBandStepByStep() public {
+        _driftCredit();
+        // Step 1: request 400 (pending still counts toward credit: weight unchanged, so allowed).
+        Action[] memory req = _one(address(credit), Op.RequestRedeem, 400 * USD);
+        assertEq(uint8(mandate.check(req)), uint8(Reason.OK));
+        _execute(req);
+        // Step 2: claim after the delay -> credit 2,200 / 10,600 = 20.8%, back in band.
+        vm.warp(block.timestamp + 1 hours);
+        _postNav(10_600 * USD);
+        Action[] memory clm = _one(address(credit), Op.Claim, 1);
+        assertEq(uint8(mandate.check(clm)), uint8(Reason.OK));
+        _execute(clm);
+        assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.OK));
+    }
+
+    function test_noWorse_cannotOvershootPastTheOtherBand() public {
+        _execute(_one(address(tbill), Op.Deposit, 500 * USD)); // T-bill 50% (edge), cash 15%
+        aToken.mint(address(this), 200 * USD);
+        aToken.approve(address(tbill), 200 * USD);
+        tbill.accrue(200 * USD); // T-bill 5,200 / 10,200 = 51.0% (above band), cash 14.7%
+        _postNav(10_200 * USD);
+        // Withdraw 1,000 is within the size cap (10% of 10,200) and lands T-bill at 41.2%: in band, allowed.
+        assertEq(uint8(mandate.check(_one(address(tbill), Op.Withdraw, 1000 * USD))), uint8(Reason.OK));
+        // Two withdrawals of 1,000 land at 31.4%: crossed target and out of band on the other side.
+        Action[] memory two = _two(address(tbill), Op.Withdraw, 1000 * USD, address(tbill), Op.Withdraw, 1000 * USD);
+        assertEq(uint8(mandate.check(two)), uint8(Reason.WEIGHT_OUT_OF_BAND));
+    }
+
+    function test_noWorse_floorMayNotFallFurther() public {
+        aToken.mint(address(this), 600 * USD);
+        aToken.approve(address(credit), 600 * USD);
+        credit.accrue(address(plenum), 600 * USD); // cash 2,000 / 10,600 = 18.9% (below floor)
+        assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.OK));
+        assertEq(uint8(mandate.check(_one(address(gold), Op.Deposit, 10 * USD))), uint8(Reason.LIQUIDITY_FLOOR));
+        // Raising cash from T-bill is allowed even though it stays below the floor.
+        assertEq(uint8(mandate.check(_one(address(tbill), Op.Withdraw, 100 * USD))), uint8(Reason.OK));
     }
 
     function test_pendingCountsTowardSleeveUntilClaimed() public {

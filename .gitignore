@@ -30,3 +30,6 @@ cre/**/.cre/
 .vscode/
 .idea/
 
+
+# Local-chain deployment files
+contracts/deployments/31337.json

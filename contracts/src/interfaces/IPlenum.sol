@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Action, Reason} from "./Types.sol";
+import {Action, Op, Reason} from "./Types.sol";
 
 /// @title IPlenum
 /// @notice One group: members, non-transferable units, A-Token custody. Only Plenum moves money into adapters.
@@ -22,6 +22,8 @@ interface IPlenum {
     /// @notice `navPerUnit` = A-Token units (6 decimals) per whole unit (1e12 base units, amendment A8).
     event Contributed(address indexed member, uint256 assets, uint256 units, uint256 navPerUnit);
     event Redeemed(address indexed member, uint256 units, uint256 assets, address to);
+    /// @notice One executed action. `result` = requestId for RequestRedeem, assets received for Claim, else 0.
+    event ActionExecuted(address indexed adapter, Op op, uint256 assets, uint256 result);
     /// @notice Logged instead of reverting when an unverified party is refused (amendment A1).
     event ComplianceRefused(address indexed account, Reason reason);
 

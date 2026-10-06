@@ -40,7 +40,7 @@ enum NavSource {
     FALLBACK
 }
 
-/// @notice Investment policy as code (SPEC §7, amendment A5 adds `pauseQuorum`).
+/// @notice Investment policy as code (SPEC §7; amendments A5 and A19 add `pauseQuorum`, `votingPeriod`).
 struct MandateConfig {
     address[] adapters; // allowlist; index i matches targetBps[i]
     uint16[] targetBps; // target weight per adapter, basis points of NAV
@@ -56,6 +56,7 @@ struct MandateConfig {
     uint32 timelock; // delay before a mandate change applies
     bytes32 jurisdictionsRoot; // stretch: Merkle root of allowed country codes
     uint16 pauseQuorum; // k in k-of-n: member pause votes needed to pause the manager
+    uint32 votingPeriod; // seconds an escalation stays open (SPEC A19)
 }
 
 /// @notice Execution paths revert with the policy reason that blocked them.

@@ -10,6 +10,7 @@ optimizer_runs = 200
 cbor_metadata = true
 bytecode_hash = "none"
 use_literal_content = true
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
 remappings = [
   "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
   "forge-std/=lib/forge-std/src/",
@@ -32,6 +33,6 @@ ignore = ["src/vendor/*.sol"]
 
 [lint]
 # Vendored Chainlink code is kept as published.
-ignore = ["src/vendor/*.sol"]
+ignore = ["src/vendor/*.sol", "test/**/*.sol", "script/*.sol"]
 # Public immutables double as camelCase getters used by the agent, CRE and indexer.
-exclude_lints = ["screaming-snake-case-immutable"]
+exclude_lints = ["screaming-snake-case-immutable", "asm-keccak256"]

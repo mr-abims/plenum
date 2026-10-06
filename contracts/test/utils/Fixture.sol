@@ -188,5 +188,6 @@ abstract contract Fixture is Test {
         c.mandateChangeBps = 6667;
         c.timelock = 48 hours;
         c.pauseQuorum = 2;
+        c.votingPeriod = 48 hours;
     }
 }

@@ -11,12 +11,12 @@ interface IManagerGateway {
     event ManagerAction(bytes32 indexed actionsHash, bytes32 rationaleHash, bytes32 modelId, Reason reason);
 
     /// @notice One-time setup by the factory.
-    function initialize(address plenum, address mandate, address governance, address manager) external;
+    function initialize(address plenum, address mandate, address governance, address managerKey) external;
 
     /// @notice Current manager operator key.
     function manager() external view returns (address);
 
-    /// @notice Full pre-flight: paused → cooldown → turnover → Mandate.check. Used by the agent's `simulate` tool.
+    /// @notice Full pre-flight: paused → Mandate.check → cooldown → turnover. Used by the agent's `simulate` tool.
     function simulate(Action[] calldata actions) external view returns (Reason);
 
     /// @notice Execute in-band actions. Manager only. Reverts on unauthorised caller, PAUSED or

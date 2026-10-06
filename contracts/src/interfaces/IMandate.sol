@@ -10,7 +10,8 @@ interface IMandate {
     event MandateChangeApplied(bytes32 configHash);
 
     /// @notice One-time setup by the factory for a freshly cloned bundle.
-    function initialize(address plenum, address navOracle, address governance, MandateConfig calldata config) external;
+    function initialize(address plenum, address navOracle, address governance, MandateConfig calldata initialConfig)
+        external;
 
     /// @notice Current configuration.
     function config() external view returns (MandateConfig memory);
@@ -21,6 +22,9 @@ interface IMandate {
     /// @notice Maximum number of members (≤ 99).
     function maxMembers() external view returns (uint16);
 
+    /// @notice Cash plus every adapter's value and pending value, read onchain (A-Token units).
+    function holdingsTotal() external view returns (uint256);
+
     /// @notice True when `adapter` is on the allowlist.
     function isAllowed(address adapter) external view returns (bool);
 
@@ -30,7 +34,7 @@ interface IMandate {
     function check(Action[] calldata actions) external view returns (Reason);
 
     /// @notice Queue a new config behind the timelock. Governance only (stretch: MD-3).
-    function scheduleChange(MandateConfig calldata config) external;
+    function scheduleChange(MandateConfig calldata newConfig) external;
 
     /// @notice Apply a queued config after its eta. Governance only (stretch: MD-3).
     function applyChange() external;
