@@ -1,15 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {MandateConfig, NotImplemented} from "../interfaces/Types.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {IPlenum} from "../interfaces/IPlenum.sol";
+import {IMandate} from "../interfaces/IMandate.sol";
+import {IGovernance} from "../interfaces/IGovernance.sol";
+import {IManagerGateway} from "../interfaces/IManagerGateway.sol";
+import {IComplianceGate} from "../interfaces/IComplianceGate.sol";
+import {MandateConfig} from "../interfaces/Types.sol";
+
+/// @notice Cleanverse-style registration that lets a contract hold the A-Token (MockAToken implements it).
+interface IApassRegistrar {
+    function registerApass(address pool) external;
+}
 
 /// @title PlenumFactory
 /// @notice Deploys one bundle per group as minimal-proxy clones: Plenum, Mandate, Governance, ManagerGateway
-///         (decision 4). Shared singletons (NavOracle, ComplianceGate, ConsentRegistry) are wired in. Registers
-///         each new Plenum with the A-Token so it may hold it (amendment A9). Callers must be verified.
-/// @dev Session 0 stub.
+///         (SPEC A10). Shared singletons (NavOracle, ComplianceGate, ConsentRegistry) are wired in. Registers
+///         each new Plenum with the A-Token so it may hold it (SPEC A9); needs REGISTER_ROLE on the A-Token.
 contract PlenumFactory {
-    /// @notice Amendment A3: lets Envio discover every bundle.
+    /// @notice SPEC A3: lets Envio discover every bundle.
     event PlenumCreated(
         address indexed plenum, address mandate, address governance, address gateway, uint8 templateId, string name
     );
@@ -34,6 +44,8 @@ contract PlenumFactory {
         address consentRegistry;
     }
 
+    error ZeroManager();
+
     constructor(Deps memory d) {
         plenumImpl = d.plenumImpl;
         mandateImpl = d.mandateImpl;
@@ -45,9 +57,38 @@ contract PlenumFactory {
         consentRegistry = d.consentRegistry;
     }
 
-    /// @notice Create a plenum from a template (0 Conservative, 1 Balanced, 2 Liquidity-first) and config.
-    ///         Any verified member. `manager` is the AI operator key for the new ManagerGateway.
-    function createPlenum(string calldata, uint8, MandateConfig calldata, address) external pure returns (address) {
-        revert NotImplemented();
+    /// @notice Create a plenum from a template (0 Conservative, 1 Balanced, 2 Liquidity-first) and its config.
+    ///         Caller must be verified and becomes the organizer. `manager` is the AI operator key.
+    function createPlenum(string calldata name, uint8 templateId, MandateConfig calldata config, address manager)
+        external
+        returns (address plenum)
+    {
+        IComplianceGate(complianceGate).requireMember(msg.sender);
+        if (manager == address(0)) revert ZeroManager();
+
+        plenum = Clones.clone(plenumImpl);
+        address mandate = Clones.clone(mandateImpl);
+        address governance = Clones.clone(governanceImpl);
+        address gateway = Clones.clone(gatewayImpl);
+
+        IPlenum(plenum)
+            .initialize(
+                IPlenum.InitParams({
+                    name: name,
+                    aToken: aToken,
+                    mandate: mandate,
+                    governance: governance,
+                    gateway: gateway,
+                    navOracle: navOracle,
+                    complianceGate: complianceGate,
+                    organizer: msg.sender
+                })
+            );
+        IMandate(mandate).initialize(plenum, navOracle, governance, config);
+        IGovernance(governance).initialize(plenum, mandate, gateway);
+        IManagerGateway(gateway).initialize(plenum, mandate, governance, manager);
+        IApassRegistrar(aToken).registerApass(plenum);
+
+        emit PlenumCreated(plenum, mandate, governance, gateway, templateId, name);
     }
 }

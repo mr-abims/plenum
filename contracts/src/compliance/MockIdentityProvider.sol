@@ -3,12 +3,10 @@ pragma solidity ^0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IIdentityProvider} from "../interfaces/IIdentityProvider.sol";
-import {NotImplemented} from "../interfaces/Types.sol";
 
 /// @title MockIdentityProvider — MOCK
 /// @notice MOCK identity provider standing in for Cleanverse A-Pass behind IIdentityProvider. The owner
 ///         (demo operator) marks accounts verified with a tier and an optional MOCK country attribute.
-/// @dev Session 0 stub; setters implemented in Session 1.
 contract MockIdentityProvider is IIdentityProvider, Ownable {
     struct Identity {
         bool verified;
@@ -18,11 +16,14 @@ contract MockIdentityProvider is IIdentityProvider, Ownable {
 
     mapping(address => Identity) public identities;
 
+    event IdentitySet(address indexed account, bool verified, uint8 tier, bytes2 country);
+
     constructor() Ownable(msg.sender) {}
 
     /// @notice MOCK: set an account's identity. Owner only.
-    function setIdentity(address, bool, uint8, bytes2) external view onlyOwner {
-        revert NotImplemented();
+    function setIdentity(address account, bool verified, uint8 tier_, bytes2 country_) external onlyOwner {
+        identities[account] = Identity({verified: verified, tier: tier_, country: country_});
+        emit IdentitySet(account, verified, tier_, country_);
     }
 
     /// @inheritdoc IIdentityProvider

@@ -13,6 +13,9 @@ interface IAssetAdapter {
     /// @notice Pending (requested, unclaimed) value of `holder`, in A-Token units.
     function pendingOf(address holder) external view returns (uint256);
 
+    /// @notice A-Token `requestId` would pay if claimed now (0 if unknown, not yet claimable or sync adapter).
+    function claimable(uint256 requestId) external view returns (uint256);
+
     /// @notice True when exits are request/claim (ERC-7540 style) rather than immediate.
     function isAsync() external view returns (bool);
 

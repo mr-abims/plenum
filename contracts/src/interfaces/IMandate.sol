@@ -15,6 +15,12 @@ interface IMandate {
     /// @notice Current configuration.
     function config() external view returns (MandateConfig memory);
 
+    /// @notice Seconds before a NAV report counts as stale.
+    function navMaxAge() external view returns (uint32);
+
+    /// @notice Maximum number of members (≤ 99).
+    function maxMembers() external view returns (uint16);
+
     /// @notice True when `adapter` is on the allowlist.
     function isAllowed(address adapter) external view returns (bool);
 
