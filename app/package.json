@@ -1,0 +1,7 @@
+{
+  "name": "@plenum/app",
+  "private": true,
+  "license": "MIT",
+  "description": "Next.js member app (Mera passkey accounts)",
+  "type": "module"
+}

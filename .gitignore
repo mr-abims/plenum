@@ -1,0 +1,32 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Original handoff bundle (canonical copies live in docs/ and the repo root)
+files/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+contracts/broadcast/**/dry-run/
+
+# Node / Next / Envio
+node_modules/
+.next/
+dist/
+coverage/
+indexer/generated/
+*.tsbuildinfo
+
+# CRE
+cre/**/.cre/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+

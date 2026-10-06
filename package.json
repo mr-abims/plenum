@@ -1,0 +1,14 @@
+{
+  "name": "plenum",
+  "private": true,
+  "license": "MIT",
+  "description": "An AI money manager for groups, bound onchain by the group's rules. Monad testnet only.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test -vvv"
+  },
+  "packageManager": "pnpm@11.22.0"
+}

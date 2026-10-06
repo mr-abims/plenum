@@ -1,0 +1,7 @@
+{
+  "name": "@plenum/indexer",
+  "private": true,
+  "license": "MIT",
+  "description": "Envio HyperIndex for Plenum events on Monad testnet",
+  "type": "module"
+}

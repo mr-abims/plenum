@@ -1,0 +1,37 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib", "node_modules"]
+solc_version = "0.8.28"
+optimizer = true
+optimizer_runs = 200
+# Monad verification (Sourcify via MonadVision). docs.monad.xyz uses metadata/metadata_hash;
+# forge 1.4 names them cbor_metadata/bytecode_hash.
+cbor_metadata = true
+bytecode_hash = "none"
+use_literal_content = true
+remappings = [
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[profile.default.fuzz]
+runs = 1000
+
+[profile.default.invariant]
+runs = 256
+depth = 64
+fail_on_revert = false
+
+# Monad testnet only (chain 10143). No mainnet endpoints in this repo.
+[rpc_endpoints]
+monad_testnet = "${MONAD_TESTNET_RPC}"
+
+[fmt]
+ignore = ["src/vendor/*.sol"]
+
+[lint]
+# Vendored Chainlink code is kept as published.
+ignore = ["src/vendor/*.sol"]
+# Public immutables double as camelCase getters used by the agent, CRE and indexer.
+exclude_lints = ["screaming-snake-case-immutable"]

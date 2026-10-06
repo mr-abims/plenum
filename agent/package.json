@@ -1,0 +1,7 @@
+{
+  "name": "@plenum/agent",
+  "private": true,
+  "license": "MIT",
+  "description": "AI manager runtime (Qwen 3.8 Max) acting only through ManagerGateway",
+  "type": "module"
+}

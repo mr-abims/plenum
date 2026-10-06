@@ -1,0 +1,7 @@
+{
+  "name": "@plenum/crypto",
+  "private": true,
+  "license": "MIT",
+  "description": "Data-room crypto shared by app and agent: HKDF(PRF)->X25519, AES-256-GCM, HPKE wrap",
+  "type": "module"
+}

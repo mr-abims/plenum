@@ -1,0 +1,7 @@
+packages:
+  - contracts
+  - agent
+  - cre
+  - indexer
+  - app
+  - packages/*
