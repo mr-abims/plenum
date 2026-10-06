@@ -43,7 +43,7 @@ jobs:
         run: forge test -vvv
 
   agent:
-    name: Agent (typecheck, unit, red team)
+    name: TypeScript (agent, crypto, indexer)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -68,7 +68,10 @@ jobs:
         run: forge build
 
       - name: Typecheck
-        run: pnpm --filter @plenum/agent typecheck
+        run: pnpm --filter @plenum/agent typecheck && pnpm --filter @plenum/crypto typecheck && pnpm --filter @plenum/indexer typecheck
+
+      - name: Data-room crypto tests
+        run: pnpm --filter @plenum/crypto test
 
       - name: Unit tests
         run: pnpm --filter @plenum/agent test
