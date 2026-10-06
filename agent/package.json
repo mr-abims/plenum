@@ -3,5 +3,24 @@
   "private": true,
   "license": "MIT",
   "description": "AI manager runtime (Qwen 3.8 Max) acting only through ManagerGateway",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "once": "tsx src/main.ts --once",
+    "test": "vitest run test",
+    "redteam": "vitest run --config redteam/vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  },
+  "dependencies": {
+    "@plenum/abis": "workspace:*",
+    "openai": "7.30.0",
+    "viem": "2.57.3",
+    "zod": "4.6.5"
+  }
 }

@@ -5,3 +5,7 @@ packages:
   - indexer
   - app
   - packages/*
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - openai@7.30.0

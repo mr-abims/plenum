@@ -41,3 +41,37 @@ jobs:
       - name: Forge test
         working-directory: contracts
         run: forge test -vvv
+
+  agent:
+    name: Agent (typecheck, unit, red team)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Foundry (anvil + forge for the red-team chain)
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build contracts
+        working-directory: contracts
+        run: forge build
+
+      - name: Typecheck
+        run: pnpm --filter @plenum/agent typecheck
+
+      - name: Unit tests
+        run: pnpm --filter @plenum/agent test
+
+      - name: Red-team suite (RT-1..RT-8)
+        run: pnpm --filter @plenum/agent redteam

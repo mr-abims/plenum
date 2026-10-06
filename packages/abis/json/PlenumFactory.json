@@ -1,0 +1,339 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "d",
+        "type": "tuple",
+        "internalType": "struct PlenumFactory.Deps",
+        "components": [
+          {
+            "name": "plenumImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "mandateImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governanceImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "gatewayImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "aToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "navOracle",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "complianceGate",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "consentRegistry",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "aToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "complianceGate",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "consentRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "createPlenum",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "templateId",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "config",
+        "type": "tuple",
+        "internalType": "struct MandateConfig",
+        "components": [
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "address[]"
+          },
+          {
+            "name": "targetBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "bandBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "minLiquidityBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxTradeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxDailyTurnoverBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "navMaxAge",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "cooldown",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxMembers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "escalateQuorumBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "mandateChangeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "timelock",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "jurisdictionsRoot",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "pauseQuorum",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "votingPeriod",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      },
+      {
+        "name": "manager",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "plenum",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "gatewayImpl",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "governanceImpl",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mandateImpl",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "navOracle",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "plenumImpl",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "PlenumCreated",
+    "inputs": [
+      {
+        "name": "plenum",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "mandate",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "governance",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "gateway",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "templateId",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "FailedDeployment",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBalance",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ZeroManager",
+    "inputs": []
+  }
+]
