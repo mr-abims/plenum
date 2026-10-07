@@ -5,7 +5,9 @@ import { loadDeployment, loadEnv } from "./config.ts";
 import { buildContext } from "./context.ts";
 import { runOnce } from "./loop.ts";
 import { QwenModel } from "./model.ts";
-import { FileMemberContext, FileMemoStore } from "./stores.ts";
+import { deriveEncryptionKey } from "@plenum/crypto";
+import { hexToBytes } from "viem";
+import { BlobMemberContext, BlobMemoStore, FileMemberContext, FileMemoStore } from "./stores.ts";
 
 const log = (msg: string, data?: unknown) =>
   console.log(JSON.stringify({ t: new Date().toISOString(), msg, ...(data ? { data } : {}) }, (_, v) =>
@@ -17,19 +19,23 @@ async function main() {
   if (!env.QWEN_API_KEY || !env.QWEN_BASE_URL) throw new Error("QWEN_API_KEY and QWEN_BASE_URL are required");
   const deployment = loadDeployment(env.CHAIN_ID);
   const clients = makeClients(env.RPC_URL, env.CHAIN_ID, env.MANAGER_OPERATOR_KEY as Hex);
+  const plenum = env.PLENUM_ADDRESS as Address;
+  // Data room: encrypted memos and consented member context via the blob API, else local files (dev only).
+  const enc = env.MANAGER_ENC_SEED ? deriveEncryptionKey(hexToBytes(env.MANAGER_ENC_SEED as Hex)) : undefined;
+  const dataRoom = env.BLOB_API_URL && enc;
   const ctx = await buildContext(
     {
       clients,
       model: new QwenModel(env.QWEN_API_KEY, env.QWEN_BASE_URL, env.QWEN_MODEL),
-      memoStore: new FileMemoStore(env.MEMO_DIR),
-      memberContext: new FileMemberContext(env.MEMBER_CONTEXT_DIR),
-      plenum: env.PLENUM_ADDRESS as Address,
+      memoStore: dataRoom ? new BlobMemoStore(clients, plenum, env.BLOB_API_URL!, enc!) : new FileMemoStore(env.MEMO_DIR),
+      memberContext: dataRoom ? new BlobMemberContext(plenum, env.BLOB_API_URL!, enc!) : new FileMemberContext(env.MEMBER_CONTEXT_DIR),
+      plenum,
       external: [],
       log,
     },
     deployment,
   );
-  log("manager started", { plenum: ctx.plenum, manager: clients.account.address, model: env.QWEN_MODEL });
+  log("manager started", { plenum: ctx.plenum, manager: clients.account.address, model: env.QWEN_MODEL, dataRoom: Boolean(dataRoom) });
 
   let running = false;
   const tick = async (why: string) => {

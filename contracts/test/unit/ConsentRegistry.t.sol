@@ -16,6 +16,8 @@ contract ConsentRegistryTest is Fixture {
         vm.prank(ana);
         uint256 id = consent.grant(manager, SCOPE, expiry);
         assertTrue(consent.isActive(id));
+        assertEq(consent.grantIdsOf(ana).length, 1);
+        assertEq(consent.grantIdsOf(ana)[0], id);
         vm.warp(expiry); // RT-7: expired consent
         assertFalse(consent.isActive(id));
     }

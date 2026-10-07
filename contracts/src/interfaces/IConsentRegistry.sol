@@ -15,6 +15,9 @@ interface IConsentRegistry {
     /// @notice Revoke a grant. Only the member who made it.
     function revoke(uint256 id) external;
 
+    /// @notice Every grant a member has made, oldest first (lets clients avoid log scans).
+    function grantIdsOf(address member) external view returns (uint256[] memory);
+
     /// @notice True while the grant exists, is not revoked and has not expired.
     function isActive(uint256 id) external view returns (bool);
 }

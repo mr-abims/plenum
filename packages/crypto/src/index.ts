@@ -158,3 +158,34 @@ function b64(bytes: Uint8Array): string {
 function unb64(s: string): Uint8Array {
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 }
+
+// ------------------------------------------------------------ storage protocol
+
+/**
+ * Data-room storage protocol shared by the app (members), the blob API and the manager runtime.
+ * Blob ids are public and end with the owner's address; only that address may write or delete them, and every
+ * write is signed over this message. Contents are always an encrypted Envelope.
+ */
+export function blobMessage(id: string, method: "PUT" | "DELETE", bodyHash: string, at: number) {
+  return `Plenum data room\n${method} ${id}\nbody ${bodyHash}\nat ${at}`;
+}
+
+const tag = (plenum: string) => plenum.toLowerCase().slice(2, 10);
+
+/** A member's risk questionnaire for one plenum (owner: the member). */
+export const riskDocId = (plenum: string, member: string) => `risk-${tag(plenum)}-${member.toLowerCase()}`;
+/** A member's private profile (owner: the member). */
+export const profileDocId = (member: string) => `profile-${member.toLowerCase()}`;
+/** A manager memo, keyed by its committed rationale hash (owner: the manager operator key). */
+export const memoDocId = (rationaleHash: string, manager: string) =>
+  `memo-${rationaleHash.toLowerCase().slice(2, 18)}-${manager.toLowerCase()}`;
+
+/** Canonical JSON (sorted keys, no whitespace). keccak256 of this is the rationale hash committed onchain. */
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : 1));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}

@@ -18,6 +18,7 @@ contract ConsentRegistry is IConsentRegistry {
 
     uint256 public nextId = 1;
     mapping(uint256 => Grant) public grants;
+    mapping(address => uint256[]) internal _grantIdsOf;
 
     error ExpiryInPast(uint64 expiry);
     error ZeroGrantee();
@@ -29,6 +30,7 @@ contract ConsentRegistry is IConsentRegistry {
         if (expiry <= block.timestamp) revert ExpiryInPast(expiry);
         id = nextId++;
         grants[id] = Grant({member: msg.sender, grantee: grantee, scopeHash: scopeHash, expiry: expiry, revoked: false});
+        _grantIdsOf[msg.sender].push(id);
         emit ConsentGranted(id, msg.sender, grantee, scopeHash, expiry);
     }
 
@@ -40,6 +42,11 @@ contract ConsentRegistry is IConsentRegistry {
         if (g.revoked) return;
         g.revoked = true;
         emit ConsentRevoked(id);
+    }
+
+    /// @inheritdoc IConsentRegistry
+    function grantIdsOf(address member) external view returns (uint256[] memory) {
+        return _grantIdsOf[member];
     }
 
     /// @inheritdoc IConsentRegistry

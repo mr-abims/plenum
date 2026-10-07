@@ -45,6 +45,8 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     mapping(address => bool) public override isMember;
     mapping(address => bytes32) public encPubKeyOf;
     mapping(uint256 => bool) public inviteUsed;
+    /// @dev Bounded by MandateConfig.maxMembers (≤ 99); never iterated in state-changing code.
+    address[] internal _members;
 
     /// @dev NAV race handling (SPEC A8): flows since the last NAV report this plenum has seen.
     uint64 public lastNavTimestamp;
@@ -98,6 +100,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         inviteUsed[nonce] = true;
         isMember[msg.sender] = true;
         encPubKeyOf[msg.sender] = encPubKey;
+        _members.push(msg.sender);
         ++memberCount;
         emit MemberJoined(msg.sender, encPubKey);
     }
@@ -178,6 +181,11 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
             }
             emit ActionExecuted(act.adapter, act.op, act.assets, result);
         }
+    }
+
+    /// @inheritdoc IPlenum
+    function members() external view returns (address[] memory) {
+        return _members;
     }
 
     /// @inheritdoc IPlenum

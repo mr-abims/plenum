@@ -1,5 +1,6 @@
 import type { Address } from "viem";
 import {
+  consentRegistryAbi,
   governanceAbi,
   iAssetAdapterAbi,
   managerGatewayAbi,
@@ -33,6 +34,8 @@ export interface Observation {
   cooldownRemainingSeconds: number;
   pendingRedemptions: { requestId: string; assets: string; claimableNow: boolean }[];
   openProposals: number;
+  /** Members with an active consent grant to this manager (use with get_member_context). */
+  consentedMembers: { member: Address; grantId: string; expiresAt: number }[];
 }
 
 /** Reads everything the manager is allowed to see onchain. All amounts are A-Token base units (6 decimals). */
@@ -110,7 +113,25 @@ export async function observe(ctx: AgentContext): Promise<Observation> {
     cooldownRemainingSeconds: Math.max(0, cooldownEnds - now),
     pendingRedemptions: await pendingRedemptions(ctx),
     openProposals: Number(proposalCount),
+    consentedMembers: await consentedMembers(ctx),
   };
+}
+
+/** Active consent grants from this plenum's members to the manager, read from contract state (no log scans). */
+async function consentedMembers(ctx: AgentContext): Promise<Observation["consentedMembers"]> {
+  const pc = ctx.clients.publicClient;
+  const members = (await pc.readContract({ address: ctx.plenum, abi: plenumAbi, functionName: "members" })) as Address[];
+  const out: Observation["consentedMembers"] = [];
+  for (const member of members) {
+    const ids = await pc.readContract({ address: ctx.consentRegistry, abi: consentRegistryAbi, functionName: "grantIdsOf", args: [member] });
+    for (const id of ids) {
+      const [, grantee, , expiry] = await pc.readContract({ address: ctx.consentRegistry, abi: consentRegistryAbi, functionName: "grants", args: [id] });
+      if (grantee.toLowerCase() !== ctx.clients.account.address.toLowerCase()) continue;
+      const active = await pc.readContract({ address: ctx.consentRegistry, abi: consentRegistryAbi, functionName: "isActive", args: [id] });
+      if (active) out.push({ member, grantId: id.toString(), expiresAt: Number(expiry) });
+    }
+  }
+  return out;
 }
 
 /** Credit-vault requests owned by this plenum, found from the vault's request mapping (no log range queries). */

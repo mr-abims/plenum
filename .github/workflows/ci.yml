@@ -84,3 +84,34 @@ jobs:
 
       - name: Red-team suite (RT-1..RT-8)
         run: pnpm --filter @plenum/agent redteam
+
+  app:
+    name: App (typecheck + build against a local deployment)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Deploy contracts to a local chain
+        working-directory: contracts
+        run: |
+          anvil --silent &
+          sleep 2
+          forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
+
+      - name: Typecheck and build
+        run: pnpm --filter @plenum/app deployment && pnpm --filter @plenum/app typecheck && pnpm --filter @plenum/app build

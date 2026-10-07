@@ -16,6 +16,8 @@ contract PlenumTest is Fixture {
         assertTrue(plenum.isMember(jonas));
         assertEq(plenum.memberCount(), 1);
         assertTrue(plenum.inviteUsed(7));
+        assertEq(plenum.members().length, 1);
+        assertEq(plenum.members()[0], jonas);
     }
 
     function test_join_openInviteIsSingleUse() public {

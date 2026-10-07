@@ -1,5 +1,19 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
+import type { Address, Hex } from "viem";
+import { plenumAbi } from "@plenum/abis";
+import {
+  blobMessage,
+  bytes32ToPublicKey,
+  decryptDocument,
+  encryptDocument,
+  memoDocId,
+  riskDocId,
+  type EncryptionKeyPair,
+  type Envelope,
+} from "@plenum/crypto";
+import type { Clients } from "./chain.ts";
 import type { Memo } from "./schema.ts";
 
 /** Where full memos go. Only keccak256(memo) is onchain. */
@@ -44,5 +58,65 @@ export class InMemoryMemberContext implements MemberContextSource {
 
   async get(member: string): Promise<string | undefined> {
     return this.docs[member.toLowerCase()];
+  }
+}
+
+// ------------------------------------------------------------------ data room
+
+
+
+async function putBlob(clients: Clients, apiUrl: string, id: string, env: Envelope) {
+  const body = JSON.stringify(env);
+  const at = Math.floor(Date.now() / 1000);
+  const hash = createHash("sha256").update(body).digest("hex");
+  const signature = await clients.account.signMessage({ message: blobMessage(id, "PUT", hash, at) });
+  const res = await fetch(`${apiUrl}/${id}`, {
+    method: "PUT",
+    headers: { "x-plenum-signer": clients.account.address, "x-plenum-signature": signature, "x-plenum-at": String(at) },
+    body,
+  });
+  if (!res.ok) throw new Error(`memo upload failed: ${res.status} ${await res.text()}`);
+}
+
+/**
+ * SPEC §8 "Explain": the full memo is encrypted to every member's published X25519 key (and the manager's own) and
+ * stored under its committed rationale hash; only keccak256(memo) is onchain.
+ */
+export class BlobMemoStore implements MemoStore {
+  constructor(
+    private readonly clients: Clients,
+    private readonly plenum: Address,
+    private readonly apiUrl: string,
+    private readonly encryption: EncryptionKeyPair,
+  ) {}
+
+  async save(hash: string, memo: Memo): Promise<void> {
+    const pc = this.clients.publicClient;
+    const members = (await pc.readContract({ address: this.plenum, abi: plenumAbi, functionName: "members" })) as Address[];
+    const keys = await Promise.all(
+      members.map((m) => pc.readContract({ address: this.plenum, abi: plenumAbi, functionName: "encPubKeyOf", args: [m] }) as Promise<Hex>),
+    );
+    const readers = [this.encryption.publicKey, ...keys.filter((k) => /[1-9a-f]/.test(k.slice(2))).map(bytes32ToPublicKey)];
+    const id = memoDocId(hash, this.clients.account.address);
+    await putBlob(this.clients, this.apiUrl, id, await encryptDocument(id, new TextEncoder().encode(JSON.stringify(memo)), readers));
+  }
+}
+
+/** Reads a member's risk questionnaire from the data room with the manager's key (only after a consent check). */
+export class BlobMemberContext implements MemberContextSource {
+  constructor(
+    private readonly plenum: Address,
+    private readonly apiUrl: string,
+    private readonly encryption: EncryptionKeyPair,
+  ) {}
+
+  async get(member: string): Promise<string | undefined> {
+    const res = await fetch(`${this.apiUrl}/${riskDocId(this.plenum, member)}`);
+    if (!res.ok) return undefined;
+    try {
+      return new TextDecoder().decode(await decryptDocument((await res.json()) as Envelope, this.encryption));
+    } catch {
+      return undefined; // not shared with the manager (no wrapped key for us)
+    }
   }
 }

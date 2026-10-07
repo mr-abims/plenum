@@ -1,0 +1,4 @@
+.next/
+.blobs/
+next-env.d.ts
+src/lib/deployment.json

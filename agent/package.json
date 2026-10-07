@@ -7,7 +7,8 @@
   "scripts": {
     "start": "tsx src/main.ts",
     "once": "tsx src/main.ts --once",
-    "test": "vitest run test",
+    "manager-key": "tsx src/managerKey.ts",
+    "test": "vitest run",
     "redteam": "vitest run --config redteam/vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -19,6 +20,7 @@
   },
   "dependencies": {
     "@plenum/abis": "workspace:*",
+    "@plenum/crypto": "workspace:*",
     "openai": "7.30.0",
     "viem": "2.57.3",
     "zod": "4.6.5"

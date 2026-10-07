@@ -17,6 +17,10 @@ export const EnvSchema = z.object({
   LOOP_INTERVAL_MS: z.coerce.number().int().positive().default(300_000),
   MEMO_DIR: z.string().default(".memos"),
   MEMBER_CONTEXT_DIR: z.string().default(".member-context"),
+  /** Data-room blob API (the app's /api/blobs). When set with MANAGER_ENC_SEED, memos and member context use it. */
+  BLOB_API_URL: z.string().url().optional(),
+  /** 32-byte hex secret for the manager's data-room key (separate from the operator key). */
+  MANAGER_ENC_SEED: hex.refine((s) => s.length === 66, "32 bytes").optional(),
 });
 export type Env = z.infer<typeof EnvSchema>;
 

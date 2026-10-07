@@ -47,6 +47,8 @@ interface IPlenum {
     function totalUnits() external view returns (uint256);
     function isMember(address account) external view returns (bool);
     function memberCount() external view returns (uint256);
+    /// @notice Every member in join order (at most 99). Lets clients and the manager avoid log scans.
+    function members() external view returns (address[] memory);
     /// @notice A-Token held as cash by this plenum.
     function cash() external view returns (uint256);
 }

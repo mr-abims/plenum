@@ -3,5 +3,35 @@
   "private": true,
   "license": "MIT",
   "description": "Next.js member app (Mera passkey accounts)",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "deployment": "node scripts/deployment.mjs ${NEXT_PUBLIC_CHAIN_ID:-31337}",
+    "dev": "pnpm deployment && next dev",
+    "build": "pnpm deployment && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@category-labs/mera": "0.2.0",
+    "@plenum/abis": "workspace:*",
+    "@plenum/crypto": "workspace:*",
+    "@scure/bip32": "2.4.0",
+    "@scure/bip39": "2.4.0",
+    "aws4fetch": "1.0.20",
+    "next": "16.4.0",
+    "next-intl": "4.14.9",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "viem": "2.57.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
 }

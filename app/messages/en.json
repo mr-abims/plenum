@@ -1,0 +1,17 @@
+{
+  "brand": { "tagline": "Who guards the guardian? Your rules do." },
+  "welcome": {
+    "title": "Invest together. Let an AI do the work. Keep it inside your rules.",
+    "lead": "Plenum lets a group pool money and hand day-to-day management to an AI manager. The group writes the rules, an independent administrator prices the fund, and only verified people can put money in or take it out.",
+    "create": "Create a group",
+    "join": "I have an invite",
+    "points": {
+      "rules": "Rules the AI can't break. Every trade is checked against your group's rules before it happens.",
+      "price": "An independent price. A separate administrator values the fund. The AI never does.",
+      "people": "Verified people only. Money moves only between members who have verified who they are.",
+      "fire": "You stay in charge. Bigger moves need your approval, and members can pause the manager at any time."
+    }
+  },
+  "nav": { "home": "Home", "manager": "Manager", "approvals": "Approvals", "data": "Data room", "members": "Members", "rules": "Rules" },
+  "common": { "signIn": "Sign in with passkey", "signOut": "Sign out", "verified": "Verified", "notVerified": "Not verified yet", "indicative": "indicative rate", "working": "Working…" }
+}

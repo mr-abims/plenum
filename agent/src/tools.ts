@@ -2,6 +2,7 @@ import { decodeEventLog, keccak256, stringToHex, toHex, type Address, type Hash 
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
 import { z } from "zod";
 import { consentRegistryAbi, governanceAbi, managerGatewayAbi, mandateAbi, OPS, REASONS, type Reason } from "@plenum/abis";
+import { canonicalJson } from "@plenum/crypto";
 import { writeWithGas } from "./chain.ts";
 import { classify } from "./classify.ts";
 import type { AgentContext } from "./context.ts";
@@ -45,15 +46,7 @@ export function toContractActions(actions: PlanAction[]) {
   return actions.map((a) => ({ adapter: a.adapter.toLowerCase() as Address, op: OPS.indexOf(a.op), assets: BigInt(a.assets) }));
 }
 
-/** Canonical JSON (sorted keys) so the committed hash is reproducible from the stored memo. */
-export function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : 1));
-    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
+export const canonical = canonicalJson;
 
 export function memoHash(memo: Memo): Hash {
   return keccak256(toHex(canonical(memo)));
