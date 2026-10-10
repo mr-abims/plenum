@@ -45,7 +45,11 @@ export const TEMPLATES = [
 
 export type Template = (typeof TEMPLATES)[number];
 
-export function mandateConfig(t: Template, demo = true) {
+/**
+ * Onchain mandate for a template. `personal` makes a portfolio of one (SPEC A23): one member, the owner alone approves
+ * escalations and can pause the manager. Same safety bounds as a group.
+ */
+export function mandateConfig(t: Template, { demo = true, personal = false }: { demo?: boolean; personal?: boolean } = {}) {
   return {
     adapters: t.sleeves.map((s) => s.adapter as Address),
     targetBps: t.sleeves.map((s) => s.target),
@@ -55,12 +59,12 @@ export function mandateConfig(t: Template, demo = true) {
     maxDailyTurnoverBps: 2500,
     navMaxAge: demo ? 600 : 900,
     cooldown: demo ? 60 : 300,
-    maxMembers: 99,
-    escalateQuorumBps: demo ? 4000 : 5000,
+    maxMembers: personal ? 1 : 99,
+    escalateQuorumBps: personal ? 10_000 : demo ? 4000 : 5000,
     mandateChangeBps: 6667,
     timelock: 48 * 3600,
     jurisdictionsRoot: `0x${"00".repeat(32)}` as `0x${string}`,
-    pauseQuorum: 2,
+    pauseQuorum: personal ? 1 : 2,
     votingPeriod: demo ? 3600 : 48 * 3600,
   };
 }

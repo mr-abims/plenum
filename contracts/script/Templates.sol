@@ -32,6 +32,18 @@ library Templates {
         });
     }
 
+    /// @notice Personal portfolio (SPEC A23): a plenum of one. The owner alone approves escalations and can pause.
+    function buildPersonal(uint8 id, address tbill, address credit, address gold, Timing memory t)
+        internal
+        pure
+        returns (MandateConfig memory c)
+    {
+        c = build(id, tbill, credit, gold, t);
+        c.maxMembers = 1;
+        c.pauseQuorum = 1;
+        c.escalateQuorumBps = 10_000;
+    }
+
     function build(uint8 id, address tbill, address credit, address gold, Timing memory t)
         internal
         pure

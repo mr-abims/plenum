@@ -50,6 +50,9 @@ export interface PlenumState {
   cooldown: number;
   escalateQuorumBps: number;
   pauseQuorum: number;
+  maxMembers: number;
+  /** A personal portfolio: a plenum of one (SPEC A23). */
+  personal: boolean;
   votingPeriod: number;
   paused: boolean;
   pauseVotes: number;
@@ -81,6 +84,7 @@ export async function loadPlenum(address: Address): Promise<PlenumState> {
     escalateQuorumBps: number;
     pauseQuorum: number;
     votingPeriod: number;
+      maxMembers: number;
   };
   const [config, report, manager, paused, pauseVotes, block] = await Promise.all([
     read<Cfg>(mandate, mandateAbi, "config"),
@@ -137,6 +141,8 @@ export async function loadPlenum(address: Address): Promise<PlenumState> {
     cooldown: config.cooldown,
     escalateQuorumBps: config.escalateQuorumBps,
     pauseQuorum: config.pauseQuorum,
+    maxMembers: config.maxMembers,
+    personal: config.maxMembers === 1,
     votingPeriod: config.votingPeriod,
     paused,
     pauseVotes: Number(pauseVotes),

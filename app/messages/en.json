@@ -4,8 +4,8 @@
   },
   "welcome": {
     "title": "Invest together. Let an AI do the work. Keep it inside your rules.",
-    "lead": "Plenum lets a group pool money and hand day-to-day management to an AI manager. The group writes the rules, an independent administrator prices the fund, and only verified people can put money in or take it out.",
-    "create": "Create a group",
+    "lead": "Plenum lets you invest on your own or pool money with a group, and hand day-to-day management to an AI manager. You write the rules, an independent administrator prices the fund, and only verified people can put money in or take it out.",
+    "create": "Start investing",
     "join": "I have an invite",
     "points": {
       "rules": "Rules the AI can't break. Every trade is checked against your group's rules before it happens.",
@@ -20,6 +20,7 @@
     "approvals": "Approvals",
     "data": "Data room",
     "members": "Members",
+    "controls": "Controls",
     "rules": "Rules"
   },
   "common": {
@@ -34,7 +35,7 @@
     "heroTitleA": "Who guards the guardian?",
     "heroTitleB": "Your rules do.",
     "heroLead": "Pool money with people you trust. An AI manages it daily, and contracts on Monad keep it inside your rules.",
-    "create": "Start a group",
+    "create": "Start investing",
     "join": "I have an invite",
     "manifesto": "Professional money management starts around $25 million. Everyone else runs on a spreadsheet and trust in one treasurer.",
     "manifestoB": "AI can now do that job for almost nothing. But no group should have to trust an AI with its money. With Plenum, it doesn't have to.",
@@ -45,7 +46,7 @@
     "evidenceTitle": "Even with the key, it can't take the money.",
     "evidenceLead": "The worst a fully compromised manager can do is move money between assets the group already approved, within its limits. These are the real transactions.",
     "flowTitle": "From a group chat to a governed fund.",
-    "closeTitle": "Your group. Your rules. An AI that answers to both.",
+    "closeTitle": "Your money. Your rules. An AI that answers to them.",
     "disclaimer": "Plenum is software, not a fund or an adviser. It runs on Monad testnet with test money. Simulated assets and identity checks are labelled MOCK; the backup price writer is labelled FALLBACK."
   }
 }

@@ -45,11 +45,11 @@ function Home() {
 
   return (
     <div className="space-y-6">
-      <AnimatePresence>{created ? <CreatedBanner /> : null}</AnimatePresence>
+      <AnimatePresence>{created ? <CreatedBanner personal={p.personal} /> : null}</AnimatePresence>
 
       <div className="grid gap-6 md:grid-cols-[1.3fr_1fr]">
         <Card className="relative overflow-hidden">
-          <p className="text-[13px] text-muted">Group value</p>
+          <p className="text-[13px] text-muted">{p.personal ? "Portfolio value" : "Group value"}</p>
           <div className="mt-2">
             <Money amount={p.total} />
           </div>
@@ -69,7 +69,7 @@ function Home() {
                 <Money amount={position.value} />
               </div>
               <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 font-mono text-xs text-muted tabular">
-                <span>{pct(position.shareBps)} of the group</span>
+                {p.personal ? null : <span>{pct(position.shareBps)} of the group</span>}
                 <span>{(Number(position.units) / Number(UNIT)).toFixed(2)} units</span>
               </div>
             </>
@@ -105,22 +105,26 @@ function Home() {
         <LatestFromManager plenum={plenum} />
       </div>
 
-      {position?.isMember && session ? <InvitePanel plenum={plenum} highlight={!!created} onDone={refresh} /> : null}
+      {position?.isMember && session && !p.personal ? <InvitePanel plenum={plenum} highlight={!!created} onDone={refresh} /> : null}
     </div>
   );
 }
 
-function CreatedBanner() {
+function CreatedBanner({ personal }: { personal: boolean }) {
   return (
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-wrap items-center gap-4 rounded-[20px] border border-accent/30 bg-accent-soft p-5">
       <CheckCircle size={28} weight="fill" className="text-accent" />
       <div className="min-w-0 flex-1">
-        <p className="font-medium">Your group is live on Monad.</p>
-        <p className="text-sm text-muted">Next: invite the people you invest with, then make the first contribution.</p>
+        <p className="font-medium">Your {personal ? "portfolio" : "group"} is live on Monad.</p>
+        <p className="text-sm text-muted">
+          {personal ? "Next: make your first contribution below." : "Next: invite the people you invest with, then make the first contribution."}
+        </p>
       </div>
-      <a href="#invite" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-accent-ink">
-        Invite members <ArrowRight size={15} />
-      </a>
+      {personal ? null : (
+        <a href="#invite" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-accent-ink">
+          Invite members <ArrowRight size={15} />
+        </a>
+      )}
     </motion.div>
   );
 }

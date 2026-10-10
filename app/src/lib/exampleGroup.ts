@@ -50,6 +50,8 @@ export const EXAMPLE_GROUP: PlenumState = {
   cooldown: 60,
   escalateQuorumBps: 4000,
   pauseQuorum: 2,
+  maxMembers: 99,
+  personal: false,
   votingPeriod: 48 * 3600,
   paused: false,
   pauseVotes: 0,

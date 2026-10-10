@@ -65,7 +65,7 @@ export default function ApprovalsPage() {
       <PasskeySheet open={tx.passkey} action="Approving a proposal" />
       <PageHeader
         title="Decisions the manager can't make alone"
-        lead={p ? `A proposal passes when ${pct(p.escalateQuorumBps, 0)} of members approve before its deadline. Nothing moves until then.` : undefined}
+        lead={p ? (p.personal ? "Bigger moves wait for you. Nothing moves until you approve with your passkey." : `A proposal passes when ${pct(p.escalateQuorumBps, 0)} of members approve before its deadline. Nothing moves until then.`) : undefined}
       />
 
       {!proposals ? (

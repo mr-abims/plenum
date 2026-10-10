@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { decodeEventLog, type Address } from "viem";
-import { ArrowLeft, ArrowRight, Check, Coins, Gavel, HandPalm, Prohibit, Scales, Vault } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, Check, Coins, Gavel, HandPalm, Prohibit, Scales, User, UsersThree, Vault } from "@phosphor-icons/react";
 import { plenumAbi, plenumFactoryAbi } from "@plenum/abis";
 import { publicKeyToBytes32 } from "@plenum/crypto";
 import { ChamberDial, rowsFromTemplate } from "@/components/ChamberDial";
@@ -25,7 +25,9 @@ export default function CreatePage() {
   const router = useRouter();
   const reduce = useReducedMotion();
   const [step, setStep] = useState<0 | 1>(0);
+  const [personal, setPersonal] = useState(false);
   const [name, setName] = useState("");
+  const noun = personal ? "portfolio" : "group";
   const [template, setTemplate] = useState<Template>(TEMPLATES[1]);
   const [verified, setVerified] = useState<boolean | null>(null);
   const tx = useTx();
@@ -37,7 +39,7 @@ export default function CreatePage() {
   if (!session) {
     return (
       <div className="mx-auto max-w-lg pt-16 text-center">
-        <h1 className="font-display text-4xl font-semibold tracking-[-0.035em]">Start a group</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-[-0.035em]">Start investing</h1>
         <p className="mt-4 text-muted">First, set up your passkey account. It takes a few seconds.</p>
         <Link href="/start?next=/create" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 text-sm font-medium text-accent-ink">
           Get started <ArrowRight size={16} />
@@ -56,7 +58,7 @@ export default function CreatePage() {
           if (!MANAGER_ADDRESS) throw new Error("The AI manager's address is not configured (NEXT_PUBLIC_MANAGER_ADDRESS).");
           const hash = await send(
             session.account,
-            { address: DEPLOYMENT.factory, abi: plenumFactoryAbi, functionName: "createPlenum", args: [name.trim(), template.id, mandateConfig(template), MANAGER_ADDRESS] },
+            { address: DEPLOYMENT.factory, abi: plenumFactoryAbi, functionName: "createPlenum", args: [name.trim(), template.id, mandateConfig(template, { personal }), MANAGER_ADDRESS] },
             sent,
           );
           const receipt = await publicClient.getTransactionReceipt({ hash });
@@ -66,11 +68,11 @@ export default function CreatePage() {
               if (ev.eventName === "PlenumCreated") plenum = ev.args.plenum;
             } catch {}
           }
-          if (!plenum) throw new Error("Group created but its address was not found in the receipt.");
+          if (!plenum) throw new Error(`The ${noun} was created but its address was not found in the receipt.`);
         },
       },
       {
-        label: "Add you as the first member",
+        label: personal ? "Make you its owner" : "Add you as the first member",
         run: async (sent) => {
           const invite = await signInvite(session.account, plenum!, session.account.address, 1);
           return send(session.account, { address: plenum!, abi: plenumAbi, functionName: "join", args: [encodeInvite(invite), publicKeyToBytes32(session.encryption.publicKey)] }, sent);
@@ -82,10 +84,15 @@ export default function CreatePage() {
 
   const clauses = [
     { icon: Vault, text: `The manager may only buy and sell the ${template.sleeves.length} assets below. It can never send money anywhere else.` },
-    { icon: Scales, text: `Any single trade is limited to ${pct(template.maxTrade, 0)} of the group's value, and all trades in a day to 25%.` },
-    { icon: Coins, text: `At least ${pct(template.cashFloor, 0)} stays in cash so members can take money out.` },
-    { icon: Gavel, text: "Anything outside these limits becomes a proposal that members approve with their passkey." },
-    { icon: HandPalm, text: "Any 2 members can pause the manager instantly." },
+    { icon: Scales, text: `Any single trade is limited to ${pct(template.maxTrade, 0)} of the ${noun}'s value, and all trades in a day to 25%.` },
+    { icon: Coins, text: `At least ${pct(template.cashFloor, 0)} stays in cash so ${personal ? "you" : "members"} can take money out.` },
+    {
+      icon: Gavel,
+      text: personal
+        ? "Anything outside these limits becomes a proposal that you approve with your passkey."
+        : "Anything outside these limits becomes a proposal that members approve with their passkey.",
+    },
+    { icon: HandPalm, text: personal ? "You can pause the manager instantly." : "Any 2 members can pause the manager instantly." },
   ];
 
   return (
@@ -99,7 +106,34 @@ export default function CreatePage() {
       <AnimatePresence mode="wait">
         {step === 0 ? (
           <motion.div key="pick" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduce ? undefined : { opacity: 0, x: -12 }}>
-            <h1 className="mt-6 max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-5xl">Choose your group's rules.</h1>
+            <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Who is investing">
+              {([
+                [false, UsersThree, "A group", "Pool money with people you know. Bigger moves need the members' approval."],
+                [true, User, "Just me", "Your own portfolio. You set the rules and approve bigger moves yourself."],
+              ] as const).map(([value, I, title, body]) => {
+                const on = personal === value;
+                return (
+                  <button
+                    key={title}
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      setPersonal(value);
+                      if (value && !name.trim()) setName("My portfolio");
+                      if (!value && name === "My portfolio") setName("");
+                    }}
+                    className={`flex gap-3 rounded-[20px] border p-4 text-left transition ${on ? "border-accent/60 bg-accent-soft" : "border-line hover:border-line-strong"}`}
+                  >
+                    <I size={22} className={on ? "text-accent" : "text-muted"} />
+                    <span>
+                      <span className="block font-medium">{title}</span>
+                      <span className="mt-1 block text-sm text-muted">{body}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <h1 className="mt-8 max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-5xl">Choose your {noun}'s rules.</h1>
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
               The rules decide what the AI manager may buy, how far each holding may drift, how much cash stays on hand and how big one trade can be. They're written into a contract the manager can't change.
             </p>
@@ -107,7 +141,7 @@ export default function CreatePage() {
             {verified === false ? (
               <div className="mt-6 max-w-2xl">
                 <Notice tone="warn">
-                  You need to be verified before you can create a group.{" "}
+                  You need to be verified before you can create a {noun}.{" "}
                   <Link className="text-accent underline-offset-4 hover:underline" href="/start">
                     Check your status
                   </Link>
@@ -192,7 +226,7 @@ export default function CreatePage() {
                     <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-bad/30 bg-bad/10 text-bad">
                       <Prohibit size={16} />
                     </span>
-                    <span className="pt-1">The manager can't change any of this. Only members can.</span>
+                    <span className="pt-1">The manager can't change any of this. {personal ? "Only you can." : "Only members can."}</span>
                   </li>
                 </ul>
               </Card>
@@ -204,11 +238,11 @@ export default function CreatePage() {
                     <p className="text-xs text-muted">{template.title}</p>
                   </ChamberDial>
                 </div>
-                <Field label="Group name" hint="Members see this name. It's stored onchain, so keep personal details out of it.">
-                  <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="São Paulo Investment Club" disabled={tx.busy} />
+                <Field label={personal ? "Portfolio name" : "Group name"} hint={`${personal ? "Shown on your dashboard" : "Members see this name"}. It's stored onchain, so keep personal details out of it.`}>
+                  <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={personal ? "My portfolio" : "São Paulo Investment Club"} disabled={tx.busy} />
                 </Field>
                 <Button size="lg" className="w-full" busy={tx.busy} disabled={!name.trim() || verified !== true || tx.busy} onClick={create}>
-                  Create group
+                  {personal ? "Create my portfolio" : "Create group"}
                 </Button>
                 <TxSteps steps={tx.steps} error={tx.error} />
               </Card>

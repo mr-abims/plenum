@@ -59,11 +59,15 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-8">
-      <PasskeySheet open={tx.passkey} action={p?.paused ? "Voting to resume the manager" : "Voting to pause the manager"} />
-      <PageHeader title="Who's in" lead="Every member passed an identity check. Members own the group: they approve big moves and can stop the manager at any time." />
+      <PasskeySheet open={tx.passkey} action={p?.personal ? (p.paused ? "Resuming the manager" : "Pausing the manager") : p?.paused ? "Voting to resume the manager" : "Voting to pause the manager"} />
+      {p?.personal ? (
+        <PageHeader title="Controls" lead="Only you control this portfolio: you approve bigger moves and can stop the manager at any time." />
+      ) : (
+        <PageHeader title="Who's in" lead="Every member passed an identity check. Members own the group: they approve big moves and can stop the manager at any time." />
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <Card className="flex items-center justify-center">
+      <div className={`grid gap-6 ${p?.personal ? "max-w-xl" : "lg:grid-cols-[1fr_1fr]"}`}>
+        <Card className={`flex items-center justify-center ${p?.personal ? "hidden" : ""}`}>
           {rows && p ? <Chamber rows={rows} share={share} organizer={p.organizer} /> : <Skeleton className="aspect-square w-full max-w-[360px] rounded-full!" />}
         </Card>
 
@@ -74,9 +78,11 @@ export default function MembersPage() {
             </span>
             <h2 className="mt-5 font-display text-2xl font-semibold tracking-[-0.02em]">{p.paused ? "The manager is paused" : "Stop the manager"}</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Any {p.pauseQuorum} members together can pause it instantly. While paused it can't trade or propose anything. Resuming takes the same number of votes.
+              {p.personal
+                ? "You can pause it instantly. While paused it can't trade or propose anything. Resume it whenever you're ready."
+                : `Any ${p.pauseQuorum} members together can pause it instantly. While paused it can't trade or propose anything. Resuming takes the same number of votes.`}
             </p>
-            <div className="mt-6 space-y-2">
+            <div className={`mt-6 space-y-2 ${p.personal ? "hidden" : ""}`}>
               <QuorumSeats votes={p.pauseVotes} needed={p.pauseQuorum} members={Math.max(p.memberCount, p.pauseQuorum)} tone="bad" />
               <p className="font-mono text-xs text-muted">
                 {p.pauseVotes} of {p.pauseQuorum} votes
@@ -86,7 +92,7 @@ export default function MembersPage() {
               {session && position?.isMember ? (
                 <Button variant={p.paused ? "secondary" : "danger"} busy={tx.busy} onClick={() => vote(p.paused ? "unpause" : "pause")}>
                   {p.paused ? <Play size={16} /> : <HandPalm size={16} />}
-                  {p.paused ? "Vote to resume" : "Vote to pause"}
+                  {p.personal ? (p.paused ? "Resume the manager" : "Pause the manager") : p.paused ? "Vote to resume" : "Vote to pause"}
                 </Button>
               ) : (
                 <p className="text-sm text-muted">Only members can vote.</p>
@@ -99,7 +105,7 @@ export default function MembersPage() {
         )}
       </div>
 
-      <Card>
+      <Card className={p?.personal ? "hidden" : ""}>
         {!rows ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (

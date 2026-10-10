@@ -55,7 +55,7 @@ function Shell({ plenum, children }: { plenum: Addr; children: ReactNode }) {
               </div>
             ) : null}
           </div>
-          <nav aria-label="Group">
+          <nav aria-label={p?.personal ? "Portfolio" : "Group"}>
             <ul className="space-y-1">
               {TABS.map(([suffix, key, I]) => {
                 const href = `${base}${suffix}`;
@@ -65,7 +65,7 @@ function Shell({ plenum, children }: { plenum: Addr; children: ReactNode }) {
                     <Link href={href} className={`relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm transition ${active ? "text-ink" : "text-muted hover:text-ink"}`}>
                       {active ? <motion.span layoutId="rail" className="absolute inset-0 rounded-xl border border-line bg-raised" transition={{ type: "spring", stiffness: 420, damping: 36 }} /> : null}
                       <I size={18} weight={active ? "fill" : "regular"} className={`relative ${active ? "text-accent" : ""}`} />
-                      <span className="relative">{t(key)}</span>
+                      <span className="relative">{t(p?.personal && key === "members" ? "controls" : key)}</span>
                       {key === "approvals" && open > 0 ? <span className="relative ml-auto grid min-w-5 place-items-center rounded-full bg-accent px-1.5 font-mono text-[11px] text-accent-ink">{open}</span> : null}
                     </Link>
                   </li>
@@ -89,7 +89,7 @@ function Shell({ plenum, children }: { plenum: Addr; children: ReactNode }) {
       </div>
 
       {/* Mobile tab bar */}
-      <nav aria-label="Group" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-page/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+      <nav aria-label={p?.personal ? "Portfolio" : "Group"} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-page/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
         <ul className="mx-auto grid max-w-lg grid-cols-6">
           {TABS.map(([suffix, key, I]) => {
             const href = `${base}${suffix}`;
@@ -98,7 +98,7 @@ function Shell({ plenum, children }: { plenum: Addr; children: ReactNode }) {
               <li key={key}>
                 <Link href={href} className={`relative flex min-h-15 flex-col items-center justify-center gap-1 text-[10.5px] ${active ? "text-accent" : "text-muted"}`}>
                   <I size={21} weight={active ? "fill" : "regular"} />
-                  <span className="max-w-full truncate px-0.5">{t(key)}</span>
+                  <span className="max-w-full truncate px-0.5">{t(p?.personal && key === "members" ? "controls" : key)}</span>
                   {key === "approvals" && open > 0 ? <span className="absolute right-[22%] top-2 size-2 rounded-full bg-accent" /> : null}
                 </Link>
               </li>
