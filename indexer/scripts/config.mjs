@@ -1,11 +1,17 @@
 // Writes config.yaml from contracts/deployments/<chainId>.json. Usage: node scripts/config.mjs [10143|31337]
-import { readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const chainId = Number(process.argv[2] ?? 10143);
 if (chainId !== 10143 && chainId !== 31337) throw new Error("Monad testnet (10143) or local (31337) only");
 const d = JSON.parse(readFileSync(join(import.meta.dirname, `../../contracts/deployments/${chainId}.json`), "utf8"));
-const abi = (name) => `../packages/abis/json/${name}.json`;
+// The hosted builder only receives this folder, so the ABIs the config uses are copied into ./abis (committed).
+const ABI_NAMES = ["PlenumFactory", "Plenum", "ManagerGateway", "Governance", "NavOracle", "ConsentRegistry"];
+mkdirSync(join(import.meta.dirname, "../abis"), { recursive: true });
+for (const name of ABI_NAMES) {
+  copyFileSync(join(import.meta.dirname, `../../packages/abis/json/${name}.json`), join(import.meta.dirname, `../abis/${name}.json`));
+}
+const abi = (name) => `./abis/${name}.json`;
 
 // INDEXER_SOURCE=rpc indexes straight from the Monad RPC (no HyperSync token needed): Monad caps eth_getLogs at
 // 100 blocks and ~15 requests/s, so the block interval is pinned at 100 and errors back off.

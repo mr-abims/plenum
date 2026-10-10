@@ -10,11 +10,11 @@ field_selection:
 
 contracts:
   - name: PlenumFactory
-    abi_file_path: ../packages/abis/json/PlenumFactory.json
+    abi_file_path: ./abis/PlenumFactory.json
     events:
       - event: PlenumCreated
   - name: Plenum
-    abi_file_path: ../packages/abis/json/Plenum.json
+    abi_file_path: ./abis/Plenum.json
     events:
       - event: MemberJoined
       - event: Contributed
@@ -22,11 +22,11 @@ contracts:
       - event: ComplianceRefused
       - event: ActionExecuted
   - name: ManagerGateway
-    abi_file_path: ../packages/abis/json/ManagerGateway.json
+    abi_file_path: ./abis/ManagerGateway.json
     events:
       - event: ManagerAction
   - name: Governance
-    abi_file_path: ../packages/abis/json/Governance.json
+    abi_file_path: ./abis/Governance.json
     events:
       - event: Escalated
       - event: Approved
@@ -35,11 +35,11 @@ contracts:
       - event: Unpaused
       - event: ManagerReplaced
   - name: NavOracle
-    abi_file_path: ../packages/abis/json/NavOracle.json
+    abi_file_path: ./abis/NavOracle.json
     events:
       - event: NavReported
   - name: ConsentRegistry
-    abi_file_path: ../packages/abis/json/ConsentRegistry.json
+    abi_file_path: ./abis/ConsentRegistry.json
     events:
       - event: ConsentGranted
       - event: ConsentRevoked
