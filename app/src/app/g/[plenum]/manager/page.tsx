@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import type { Address as Addr } from "viem";
-import { Check, Fingerprint, Robot, X } from "@phosphor-icons/react";
+import { Check, Fingerprint, Robot, SealCheck, X } from "@phosphor-icons/react";
 import { Address } from "@/components/Address";
 import { MemoView } from "@/components/MemoView";
 import { ReasonChip } from "@/components/ReasonChip";
@@ -152,6 +153,11 @@ export default function ManagerPage() {
                       {i.kind === "MANAGER_ACTION" ? <ReasonChip reason={i.detail} /> : null}
                       {i.kind === "NAV" && i.detail === "FALLBACK" ? <MockTag>FALLBACK</MockTag> : null}
                       <TxLink hash={i.txHash}>transaction</TxLink>
+                      {i.rationaleHash ? (
+                        <Link href={`/verify?tx=${i.txHash}`} className="inline-flex items-center gap-1 transition hover:text-accent">
+                          <SealCheck size={13} /> verify
+                        </Link>
+                      ) : null}
                       {i.modelId ? <span className="font-mono">model {modelName(i.modelId)}</span> : null}
                       {i.rationaleHash ? <span className="font-mono">fingerprint {i.rationaleHash.slice(0, 12)}…</span> : null}
                     </div>

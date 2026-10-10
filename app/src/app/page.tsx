@@ -103,7 +103,14 @@ export default async function Landing() {
                     <p className={`font-medium ${last ? "text-bad" : ""}`}>{e.title}</p>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">{e.body}</p>
                   </div>
-                  <TxLink hash={e.hash} explorer={EVIDENCE_EXPLORER}>{`${e.hash.slice(0, 10)}…${e.hash.slice(-4)}`}</TxLink>
+                  <div className="flex flex-col gap-1 sm:items-end">
+                    <TxLink hash={e.hash} explorer={EVIDENCE_EXPLORER}>{`${e.hash.slice(0, 10)}…${e.hash.slice(-4)}`}</TxLink>
+                    {"verify" in e ? (
+                      <Link href={`/verify?tx=${e.hash}`} className="text-xs text-muted transition hover:text-accent">
+                        verify its fingerprint →
+                      </Link>
+                    ) : null}
+                  </div>
                 </Reveal>
               </li>
             );

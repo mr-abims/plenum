@@ -6,6 +6,7 @@ export const EVIDENCE = [
     title: "The manager rebalances inside the rules",
     body: "An in-band trade through the manager's gateway, committed with a fingerprint of its plan. In this rehearsal the plan was scripted rather than written by the model.",
     hash: "0x8ad9effd34c515fe2cb88be5fe95f99986f0097f95c5ebfa4db4e67595c066aa",
+    verify: true,
     tone: "accent",
   },
   {
@@ -18,6 +19,7 @@ export const EVIDENCE = [
     title: "Too big to do alone, so it asks",
     body: "An oversized trade is refused in-band (TRADE_TOO_LARGE) and becomes a proposal for members.",
     hash: "0x693cd26ce14e04a3bb6eb2c1b9119ff536039641460bd69ee15ed11eaa011c91",
+    verify: true,
     tone: "warn",
   },
   {

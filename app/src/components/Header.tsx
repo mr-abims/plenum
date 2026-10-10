@@ -28,6 +28,7 @@ export function Header() {
             <a href="#duties" className="transition hover:text-ink">How it's guarded</a>
             <a href="#try" className="transition hover:text-ink">Try the rules</a>
             <a href="#evidence" className="transition hover:text-ink">Onchain proof</a>
+            <Link href="/verify" className="transition hover:text-ink">Verify an action</Link>
           </nav>
         ) : null}
         <div className="flex items-center gap-2 sm:gap-3">
