@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 import { navOracleAbi } from "@plenum/abis";
 import { makeClients } from "./chain.ts";
-import { loadDeployment, loadEnv } from "./config.ts";
+import { loadDeployment, loadEnv, modelEndpoint } from "./config.ts";
 import { buildContext } from "./context.ts";
 import { runOnce } from "./loop.ts";
 import { QwenModel } from "./model.ts";
@@ -16,7 +16,7 @@ const log = (msg: string, data?: unknown) =>
 
 async function main() {
   const env = loadEnv();
-  if (!env.QWEN_API_KEY || !env.QWEN_BASE_URL) throw new Error("QWEN_API_KEY and QWEN_BASE_URL are required");
+  const llm = modelEndpoint(env);
   const deployment = loadDeployment(env.CHAIN_ID);
   const clients = makeClients(env.RPC_URL, env.CHAIN_ID, env.MANAGER_OPERATOR_KEY as Hex);
   const plenum = env.PLENUM_ADDRESS as Address;
@@ -26,7 +26,7 @@ async function main() {
   const ctx = await buildContext(
     {
       clients,
-      model: new QwenModel(env.QWEN_API_KEY, env.QWEN_BASE_URL, env.QWEN_MODEL),
+      model: new QwenModel(llm.apiKey, llm.baseURL, llm.model),
       memoStore: dataRoom ? new BlobMemoStore(clients, plenum, env.BLOB_API_URL!, enc!) : new FileMemoStore(env.MEMO_DIR),
       memberContext: dataRoom ? new BlobMemberContext(plenum, env.BLOB_API_URL!, enc!) : new FileMemberContext(env.MEMBER_CONTEXT_DIR),
       plenum,
@@ -35,7 +35,7 @@ async function main() {
     },
     deployment,
   );
-  log("manager started", { plenum: ctx.plenum, manager: clients.account.address, model: env.QWEN_MODEL, dataRoom: Boolean(dataRoom) });
+  log("manager started", { plenum: ctx.plenum, manager: clients.account.address, model: llm.model, provider: llm.provider, dataRoom: Boolean(dataRoom) });
 
   let running = false;
   const tick = async (why: string) => {

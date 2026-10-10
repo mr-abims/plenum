@@ -11,6 +11,11 @@ export const EnvSchema = z.object({
   CHAIN_ID: z.coerce.number().refine((id) => id === 10143 || id === 31337, "Monad testnet (10143) or local only"),
   PLENUM_ADDRESS: address,
   MANAGER_OPERATOR_KEY: hex,
+  /** Any OpenAI-compatible endpoint serving the manager model (e.g. OpenRouter). Takes priority over QWEN_*. */
+  LLM_API_KEY: z.string().min(1).optional(),
+  LLM_BASE_URL: z.string().url().optional(),
+  LLM_MODEL: z.string().max(32).optional(),
+  /** Alibaba Cloud Model Studio (Singapore, workspace endpoint). */
   QWEN_API_KEY: z.string().min(1).optional(),
   QWEN_BASE_URL: z.string().url().optional(),
   QWEN_MODEL: z.string().default("qwen3.8-max"),
@@ -41,6 +46,17 @@ export type Deployment = z.infer<typeof DeploymentSchema>;
 export function loadDeployment(chainId: number, root = join(import.meta.dirname, "../../contracts")): Deployment {
   const raw = readFileSync(join(root, "deployments", `${chainId}.json`), "utf8");
   return DeploymentSchema.parse(JSON.parse(raw));
+}
+
+/** The model endpoint the manager uses: LLM_* (e.g. OpenRouter) if set, else Alibaba Model Studio (QWEN_*). */
+export function modelEndpoint(env: Env): { apiKey: string; baseURL: string; model: string; provider: string } {
+  if (env.LLM_API_KEY && env.LLM_BASE_URL && env.LLM_MODEL) {
+    return { apiKey: env.LLM_API_KEY, baseURL: env.LLM_BASE_URL, model: env.LLM_MODEL, provider: new URL(env.LLM_BASE_URL).host };
+  }
+  if (env.QWEN_API_KEY && env.QWEN_BASE_URL) {
+    return { apiKey: env.QWEN_API_KEY, baseURL: env.QWEN_BASE_URL, model: env.QWEN_MODEL, provider: "alibaba-model-studio" };
+  }
+  throw new Error("Set LLM_API_KEY, LLM_BASE_URL and LLM_MODEL (e.g. OpenRouter) or QWEN_API_KEY and QWEN_BASE_URL");
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {

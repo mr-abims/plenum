@@ -8,6 +8,7 @@
     "start": "tsx src/main.ts",
     "once": "tsx src/main.ts --once",
     "manager-key": "tsx src/managerKey.ts",
+    "model-check": "tsx src/modelCheck.ts",
     "test": "vitest run",
     "redteam": "vitest run --config redteam/vitest.config.ts",
     "typecheck": "tsc --noEmit"

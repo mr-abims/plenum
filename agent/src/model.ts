@@ -11,7 +11,10 @@ export interface ChatModel {
   complete(messages: ChatCompletionMessageParam[], tools: ChatCompletionTool[]): Promise<ChatCompletionMessage>;
 }
 
-/** Qwen 3.8 Max through Alibaba Cloud Model Studio's OpenAI-compatible endpoint, with function calling. */
+/**
+ * Qwen 3.8 Max over any OpenAI-compatible endpoint with function calling: Alibaba Cloud Model Studio, or OpenRouter
+ * (`qwen/qwen3.8-max-0902`). The model id is committed onchain with every action, so it always names the real model.
+ */
 export class QwenModel implements ChatModel {
   private readonly client: OpenAI;
 
