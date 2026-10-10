@@ -49,7 +49,7 @@ class R2Store implements BlobStore {
 
 /**
  * Vercel Blob, private access: blobs are only reachable through this API with the store's token
- * (BLOB_READ_WRITE_TOKEN, added by Vercel when a Blob store is connected). Reads bypass the CDN cache so a
+ * (BLOB_READ_WRITE_TOKEN, or Vercel OIDC + BLOB_STORE_ID, added when a Blob store is connected). Reads bypass the CDN cache so a
  * re-encrypted or erased document is never served stale.
  */
 class VercelBlobStore implements BlobStore {
@@ -129,7 +129,7 @@ export function blobStore(): BlobStore {
   store =
     R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET
       ? new R2Store(R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET)
-      : process.env.BLOB_READ_WRITE_TOKEN
+      : process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID // token, or OIDC + store id (newer Blob stores)
         ? new VercelBlobStore()
         : process.env.VERCEL
           ? new UnconfiguredStore()
