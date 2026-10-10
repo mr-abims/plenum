@@ -1,22 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, Cube, Skull } from "@phosphor-icons/react";
 import type { Address as Addr } from "viem";
+import { managerGatewayAbi, REASONS } from "@plenum/abis";
 import { ChamberDial, rowsFromPlenum } from "@/components/ChamberDial";
 import { ReasonChip } from "@/components/ReasonChip";
-import { EXAMPLE_GROUP as p, isAsyncAdapter } from "@/lib/exampleGroup";
+import { publicClient } from "@/lib/chain";
+import { DEPLOYMENT } from "@/lib/config";
+import { EVIDENCE, EVIDENCE_EXPLORER } from "@/lib/evidence";
+import { EXAMPLE_GROUP, isAsyncAdapter } from "@/lib/exampleGroup";
 import { money } from "@/lib/format";
 import { reasonInfo } from "@/lib/reasons";
+import { loadPlenum, type PlenumState } from "@/lib/plenum";
 import { after, previewReason } from "@/lib/rulePreview";
 
+/** Stand-in for "an outside address": any address the group never approved. */
+const OUTSIDE: Addr = "0x000000000000000000000000000000000000dEaD";
+const OP = { buy: 0, sell: 1, requestRedeem: 2 } as const;
+const forcedCall = EVIDENCE.find((e) => e.hash.startsWith("0x42254307"));
+
+type Verdict = { key: string; reason: string; block: bigint };
+
 /**
- * "Try to break the rules": the visitor composes one move for the EXAMPLE group's manager and sees the
- * answer instantly. The checks mirror Mandate.check (allowlist, size, cash floor, ranges under the
- * no-worse rule); onchain, the contract makes the same call before every trade.
+ * "Try to break the rules": the visitor composes one move for the Showcase Club's manager (Showcase.s.sol)
+ * and the verdict comes from ManagerGateway.simulate on Monad testnet, the same call the contract makes before
+ * every trade. If the group can't be read, it falls back to the EXAMPLE group with the browser-side mirror.
  */
 export function RuleConsole() {
+  const [live, setLive] = useState<PlenumState | null>(null);
+  const p = live ?? EXAMPLE_GROUP;
   const [target, setTarget] = useState<Addr | "outside">(p.sleeves[0]!.adapter);
   const [side, setSide] = useState<"buy" | "sell">("sell");
   const [pctOfValue, setPct] = useState(3);
@@ -25,19 +39,61 @@ export function RuleConsole() {
   const assets = (p.total * BigInt(Math.round(pctOfValue * 100))) / 10_000n;
   const async = !outside && isAsyncAdapter(target);
   const move = outside ? null : { adapter: target, side, assets, async };
-  const reason = move ? previewReason(p, move) : "ADAPTER_NOT_ALLOWED";
+  const preview = move ? previewReason(p, move) : "ADAPTER_NOT_ALLOWED";
+  const moveKey = `${target}:${side}:${assets}`;
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const answered = live && verdict?.key === moveKey ? verdict : null;
+  const reason = answered?.reason ?? preview;
+
+  useEffect(() => {
+    const showcase = DEPLOYMENT.showcasePlenum;
+    if (!showcase) return;
+    loadPlenum(showcase)
+      .then((s) => {
+        if (s.total === 0n || s.sleeves.length === 0) return;
+        setLive(s);
+        setTarget(s.sleeves[0]!.adapter);
+      })
+      .catch(() => undefined); // keep the EXAMPLE group
+  }, []);
+
+  // Ask the contract, debounced for the public RPC's rate limit.
+  useEffect(() => {
+    if (!live) return;
+    const t = setTimeout(async () => {
+      try {
+        const op = side === "buy" ? OP.buy : async ? OP.requestRedeem : OP.sell;
+        const block = await publicClient.getBlockNumber();
+        const code = await publicClient.readContract({
+          address: live.gateway,
+          abi: managerGatewayAbi,
+          functionName: "simulate",
+          args: [[{ adapter: outside ? OUTSIDE : (target as Addr), op, assets }]],
+          blockNumber: block,
+        });
+        setVerdict({ key: moveKey, reason: REASONS[Number(code)] ?? "ADAPTER_NOT_ALLOWED", block });
+      } catch {
+        // leave the browser-side preview in place
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [live, moveKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = useMemo(() => {
     const base = rowsFromPlenum(p);
     if (!move) return base;
     const a = after(p, move);
     return base.map((r) => ({ ...r, ghostBps: r.key === "cash" ? a.cashBps : a.weights[r.key.toLowerCase()] }));
-  }, [target, side, assets]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [p, target, side, assets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
       <div className="space-y-6 rounded-[24px] border border-line bg-raised p-5 shadow-panel sm:p-7">
-        <p className="text-xs text-muted">Example group, previewed in your browser. Onchain, the contract makes this same call before every trade.</p>
+        <p className="text-xs text-muted">
+          {live
+            ? `${live.name}, a real group on Monad testnet. Every answer below comes from its contract. No wallet or gas needed.`
+            : "Example group, previewed in your browser. Onchain, the contract makes this same call before every trade."}
+        </p>
         <fieldset>
           <legend className="text-sm font-medium">What should the manager touch?</legend>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -101,11 +157,32 @@ export function RuleConsole() {
             >
               <ReasonChip reason={reason} />
               <p className="text-sm leading-relaxed text-ink">{reasonInfo(reason).why}</p>
-              {outside ? <p className="text-sm text-muted">There is no transfer tool to try instead. Even signed with the manager's own key, this call reverts.</p> : null}
+              {outside ? (
+                <p className="text-sm text-muted">
+                  There is no transfer tool to try instead. Even signed with the manager&apos;s own key, this call reverts
+                  {forcedCall ? (
+                    <>
+                      {" "}
+                      (
+                      <a href={`${EVIDENCE_EXPLORER}/tx/${forcedCall.hash}`} target="_blank" rel="noreferrer" className="underline decoration-line-strong underline-offset-2 hover:text-accent">
+                        see the reverted transaction
+                      </a>
+                      )
+                    </>
+                  ) : null}
+                  .
+                </p>
+              ) : null}
             </motion.div>
           </AnimatePresence>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3 text-[11px] text-faint">
-            <span className="font-mono">same checks as Mandate.check, in the same order</span>
+            <span className="font-mono">
+              {answered
+                ? `answered by ManagerGateway.simulate · Monad testnet block ${answered.block}`
+                : live
+                  ? "asking the contract…"
+                  : "same checks as Mandate.check, in the same order"}
+            </span>
             <a href="#evidence" className="inline-flex items-center gap-1 text-muted transition hover:text-accent">
               See it refuse on Monad <ArrowRight size={12} />
             </a>

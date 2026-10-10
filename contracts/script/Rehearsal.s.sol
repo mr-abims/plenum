@@ -41,9 +41,22 @@ contract Rehearsal is Script {
         vm.stopBroadcast();
 
         _allocate(c, plenum);
-        vm.writeJson(vm.toString(address(plenum)), c.path, ".rehearsalPlenum");
-        console.log("Rehearsal plenum", address(plenum));
+        vm.writeJson(vm.toString(address(plenum)), c.path, jsonKey());
+        console.log(groupName(), address(plenum));
         console.log("Gateway", plenum.gateway());
+    }
+
+    /// @dev Hooks so variants (e.g. Showcase.s.sol) reuse the same setup.
+    function groupName() internal view virtual returns (string memory) {
+        return "Rehearsal Club";
+    }
+
+    function timing() internal pure virtual returns (Templates.Timing memory) {
+        return Templates.demo();
+    }
+
+    function jsonKey() internal pure virtual returns (string memory) {
+        return ".rehearsalPlenum";
     }
 
     function _load() internal view returns (Ctx memory c) {
@@ -66,9 +79,9 @@ contract Rehearsal is Script {
         plenum = Plenum(
             c.factory
                 .createPlenum(
-                    "Rehearsal Club",
+                    groupName(),
                     Templates.BALANCED,
-                    Templates.build(Templates.BALANCED, c.tbill, c.credit, c.gold, Templates.demo()),
+                    Templates.build(Templates.BALANCED, c.tbill, c.credit, c.gold, timing()),
                     manager
                 )
         );

@@ -17,6 +17,8 @@ export const DEPLOYMENT = deployment as unknown as {
   factory: Address;
   /** Demo group used by the landing page for live reads (Rehearsal.s.sol). */
   rehearsalPlenum?: Address;
+  /** Long-lived group the landing page's rule console asks live (Showcase.s.sol). */
+  showcasePlenum?: Address;
 };
 
 export const CHAIN = DEPLOYMENT.chainId === monadTestnet.id ? monadTestnet : foundry;
