@@ -22,12 +22,13 @@ export interface Clients {
 
 export function makeClients(rpcUrl: string, chainId: number, privateKey: Hex): Clients {
   const chain = chainId === monadTestnet.id ? monadTestnet : foundry;
-  const transport = http(rpcUrl);
+  // Monad's public RPC allows ~15 requests/s: batch reads into Multicall3 and back off on rate limits.
+  const transport = http(rpcUrl, { retryCount: 6, retryDelay: 400 });
   const account = privateKeyToAccount(privateKey);
   return {
     chain,
     account,
-    publicClient: createPublicClient({ chain, transport }),
+    publicClient: createPublicClient({ chain, transport, batch: { multicall: { wait: 16 } } }),
     walletClient: createWalletClient({ chain, transport, account }),
   };
 }

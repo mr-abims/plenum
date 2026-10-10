@@ -38,9 +38,16 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 | --- | --- |
 | Manager executes an in-band rebalance (withdraw 300 from the T-bill sleeve) with rationale hash and model ID | [0xbf0a8c87…](https://testnet.monadvision.com/tx/0xbf0a8c8750fb5baa0a0859d0b17134c0b322d4329b1146a7a40e6019f26316ea) |
 | Chainlink CRE workflow (simulated with `--broadcast`) reads holdings at the finalized block and writes `NavReported(…, CRE)` through the mock forwarder | [0x3c0dcc7b…](https://testnet.monadvision.com/tx/0x3c0dcc7b2cd7b6ab02bade2bead41905440831511db57345ae32d6551f8e2ff8) |
+| Agent runtime (scripted plan) executes an in-band rebalance; encrypted memo published, hash matches onchain | [0x8ad9effd…](https://testnet.monadvision.com/tx/0x8ad9effd34c515fe2cb88be5fe95f99986f0097f95c5ebfa4db4e67595c066aa) |
+| Agent runtime refuses an oversized trade in-band (`TRADE_TOO_LARGE`) and escalates it to a proposal | [0x693cd26c…](https://testnet.monadvision.com/tx/0x693cd26ce14e04a3bb6eb2c1b9119ff536039641460bd69ee15ed11eaa011c91) |
+| Member approves proposal 2 | [0x28c7f1fd…](https://testnet.monadvision.com/tx/0x28c7f1fd423c9d303215f9a0e553e56ae42bd9f2fad8a5623a076911a113a615) |
+| Proposal 2 executed after quorum (re-checks allowlist and NAV freshness) | [0x5dc4255f…](https://testnet.monadvision.com/tx/0x5dc4255f9a1dc9a0f17681ba5bb86d01bad534e446d57546e9c3a7ce9b3a1447) |
 | Forced call with the manager key to move 4,000 to 0xABC… reverts `PolicyViolation(ADAPTER_NOT_ALLOWED)` | [0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
 
 ## Notes
+
+- Monad's public RPC allows about 15 requests/second: the app and agent batch reads through Multicall3 and retry with backoff.
+- `agent/scripts/testnet-rehearsal.ts` reproduces the evidence above end to end (CRE pricing, in-band, escalation, approval, execution, memo check).
 
 - Monad prices some operations (cold storage, account access) above Ethereum, so Forge's local gas estimates are too low.
   Run Forge scripts with `--gas-estimate-multiplier 250`. The app and agent use the Monad RPC's own `eth_estimateGas` + 20%.

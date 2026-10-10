@@ -2,7 +2,12 @@ import { createPublicClient, http, type Abi, type Address, type Hash, type Local
 import { createWalletClient } from "viem";
 import { CHAIN, RPC_URL } from "./config";
 
-export const publicClient = createPublicClient({ chain: CHAIN, transport: http(RPC_URL) });
+// Monad's public RPC allows ~15 requests/s: batch reads into Multicall3 and back off on rate limits.
+export const publicClient = createPublicClient({
+  chain: CHAIN,
+  transport: http(RPC_URL, { retryCount: 6, retryDelay: 400 }),
+  batch: { multicall: { wait: 16 } },
+});
 
 /**
  * Sends a contract write with an explicit gas limit (estimate + 20%): Monad bills the declared limit, not gas used.
