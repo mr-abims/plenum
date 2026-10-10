@@ -7,8 +7,30 @@ if (chainId !== 10143 && chainId !== 31337) throw new Error("Monad testnet (1014
 const d = JSON.parse(readFileSync(join(import.meta.dirname, `../../contracts/deployments/${chainId}.json`), "utf8"));
 const abi = (name) => `../packages/abis/json/${name}.json`;
 
+// INDEXER_SOURCE=rpc indexes straight from the Monad RPC (no HyperSync token needed): Monad caps eth_getLogs at
+// 100 blocks and ~15 requests/s, so the block interval is pinned at 100 and errors back off.
+const rpcOnly = process.env.INDEXER_SOURCE === "rpc";
 const chainSource =
-  chainId === 10143
+  chainId === 10143 && rpcOnly
+    ? `    rpc:
+      # Ankr allows ~300 requests per 10 s; Monad Foundation and QuickNode are fallbacks (20 and 15 req/s).
+      - url: https://rpc.ankr.com/monad_testnet
+        for: sync
+        initial_block_interval: 100
+        interval_ceiling: 500
+        backoff_millis: 1500
+        polling_interval: 2000
+      - url: https://rpc-testnet.monadinfra.com
+        for: fallback
+        initial_block_interval: 100
+        interval_ceiling: 100
+        backoff_millis: 2000
+      - url: https://testnet-rpc.monad.xyz
+        for: fallback
+        initial_block_interval: 100
+        interval_ceiling: 100
+        backoff_millis: 2000`
+    : chainId === 10143
     ? `    hypersync_config:
       url: https://10143.hypersync.xyz
     rpc:
@@ -81,4 +103,4 @@ ${chainSource}
       - name: Governance
 `;
 writeFileSync(join(import.meta.dirname, "../config.yaml"), yaml);
-console.log(`config.yaml written for chain ${chainId}`);
+console.log(`config.yaml written for chain ${chainId}${rpcOnly ? " (RPC-only)" : ""}`);
