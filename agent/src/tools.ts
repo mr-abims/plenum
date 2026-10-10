@@ -156,6 +156,7 @@ async function guardedWrite(ctx: AgentContext, tool: "execute_in_band" | "escala
     modelId: ctx.model.id,
     promptVersion: PROMPT_VERSION,
     tool,
+    ...(ctx.agent ? { agent: ctx.agent } : {}),
   };
   const hash = memoHash(memo);
   await ctx.memoStore.save(hash, memo);

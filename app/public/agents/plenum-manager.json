@@ -1,0 +1,34 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Plenum Manager",
+  "description": "AI money manager for groups on Plenum. It may only buy and sell the assets a group approved, within the size, turnover and cooldown limits of the group's onchain mandate; bigger moves go to a member vote and any two members can pause it. It has no transfer tool and cannot withdraw. Every action commits a hash of its written reasoning and its model id onchain.",
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://plenumx.vercel.app"
+    },
+    {
+      "name": "provenance",
+      "endpoint": "https://plenumx.vercel.app/verify"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "registrations": [
+    {
+      "agentId": 2128,
+      "agentRegistry": "eip155:10143:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ],
+  "plenum": {
+    "network": "Monad testnet (eip155:10143)",
+    "operator": "0x6B050A5Acc5A693916614C2fb365Dc60cc9db8D8",
+    "callsOnly": "ManagerGateway (executeInBand, escalate)",
+    "canWithdraw": false,
+    "reputation": "Feedback counts only from Cleanverse-verified members of the group (tag1 \"plenum\")",
+    "testnetOnly": true
+  }
+}

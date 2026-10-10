@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { Address as Addr } from "viem";
 import { Check, Fingerprint, Robot, SealCheck, X } from "@phosphor-icons/react";
 import { Address } from "@/components/Address";
+import { AgentIdentity, loadReputation, RateAction, type Summary } from "@/components/ManagerReputation";
 import { MemoView } from "@/components/MemoView";
 import { ReasonChip } from "@/components/ReasonChip";
 import { Skeleton } from "@/components/Skeleton";
@@ -34,6 +35,11 @@ export default function ManagerPage() {
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
+  const [reputation, setReputation] = useState<Summary | null>(null);
+  const refreshReputation = () => {
+    if (p) loadReputation(p).then(setReputation).catch(() => undefined);
+  };
+  useEffect(refreshReputation, [p?.address]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!p) return;
@@ -66,6 +72,7 @@ export default function ManagerPage() {
               <Chip>Autonomy L1</Chip>
             </div>
             <p className="text-xs leading-relaxed text-muted">Acts on its own inside the rules. Asks members for everything else.</p>
+            <AgentIdentity summary={reputation} />
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -162,6 +169,9 @@ export default function ManagerPage() {
                       {i.rationaleHash ? <span className="font-mono">fingerprint {i.rationaleHash.slice(0, 12)}…</span> : null}
                     </div>
                     {i.rationaleHash && p ? <MemoView rationaleHash={i.rationaleHash} manager={p.manager} /> : null}
+                    {i.rationaleHash && p && (i.kind === "ESCALATED" || (i.kind === "MANAGER_ACTION" && i.detail === "OK")) ? (
+                      <RateAction p={p} txHash={i.txHash} rationaleHash={i.rationaleHash} escalation={i.kind === "ESCALATED"} onRated={refreshReputation} />
+                    ) : null}
                   </Card>
                 </motion.li>
               );

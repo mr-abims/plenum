@@ -37,9 +37,14 @@ enforced onchain:
   caps; it can never withdraw. Proven by 7 invariants over ~16k random calls each and the RT-1..RT-8 red-team suite
   ([`docs/threat-model.md`](threat-model.md)).
 - **Provenance:** every manager action commits `keccak256(memo)` and the model id onchain; members decrypt the memo
-  and check it against that hash.
+  and check it against that hash. The public `/verify` page decodes any manager transaction, proves its gateway is a
+  factory-made Plenum clone, and checks a memo (and its actions) against the onchain hashes.
 - **User-owned data:** member documents are encrypted with keys derived from each member's passkey; the manager reads
   them only under an onchain, expiring consent grant.
+- **Agent identity and reputation (ERC-8004):** the manager is agent #2128 in Monad testnet's canonical
+  IdentityRegistry, and every memo names that identity. Members rate its actions in the canonical
+  ReputationRegistry, each rating pointing at the action's rationale hash. The app counts only ratings from the
+  group's own Cleanverse-verified members, so outsiders can't game the score.
 - **No platform capture:** members can pause the manager instantly; the manager is a replaceable key behind a
   gateway, and the data stays with the members.
 
@@ -49,6 +54,8 @@ enforced onchain:
 | --- | --- |
 | A forced call with the manager's own key, moving 4,000 to an outside address, **reverts** `ADAPTER_NOT_ALLOWED` | [tx 0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
 | Oversized trade refused in-band, escalated, approved by a member, executed | [escalate](https://testnet.monadvision.com/tx/0x693cd26ce14e04a3bb6eb2c1b9119ff536039641460bd69ee15ed11eaa011c91) · [approve](https://testnet.monadvision.com/tx/0x28c7f1fd423c9d303215f9a0e553e56ae42bd9f2fad8a5623a076911a113a615) · [execute](https://testnet.monadvision.com/tx/0x5dc4255f9a1dc9a0f17681ba5bb86d01bad534e446d57546e9c3a7ce9b3a1447) |
+| Try it: the landing page's rule console asks the Showcase Club's `ManagerGateway.simulate` live; `/verify` checks any manager action and memo against the chain | https://plenumx.vercel.app, https://plenumx.vercel.app/verify |
+| ERC-8004: manager registered as agent #2128; a member's rating, summarised over members only | [register 0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) · [feedback 0xf69991fb…](https://testnet.monadvision.com/tx/0xf69991fb4ffd4df27da9d90a7b469740dbc16141b15f2f44adcc0b0805a46113) |
 | Invariant and red-team results | [`docs/threat-model.md`](threat-model.md), `contracts/test/invariant/`, `agent/redteam/` |
 | Video | ⏳ |
 

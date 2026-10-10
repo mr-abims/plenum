@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import { plenumAbi } from "@plenum/abis";
+import { ERC8004, plenumAbi } from "@plenum/abis";
 import type { Clients } from "./chain.ts";
 import type { Deployment } from "./config.ts";
 import type { ChatModel } from "./model.ts";
@@ -23,10 +23,12 @@ export interface AgentContext {
   /** Untrusted outside text (news, notes) shown to the model inside DATA blocks. */
   external: { label: string; text: string }[];
   log: (msg: string, data?: unknown) => void;
+  /** ERC-8004 identity named in every memo: eip155:<chain>:<IdentityRegistry>/<agentId>. */
+  agent?: string;
 }
 
 export async function buildContext(
-  base: Omit<AgentContext, "mandate" | "gateway" | "governance" | "navOracle" | "consentRegistry" | "creditVault" | "adapterNames">,
+  base: Omit<AgentContext, "mandate" | "gateway" | "governance" | "navOracle" | "consentRegistry" | "creditVault" | "adapterNames" | "agent">,
   deployment: Deployment,
 ): Promise<AgentContext> {
   const read = (functionName: "mandate" | "gateway" | "governance" | "navOracle") =>
@@ -43,6 +45,9 @@ export async function buildContext(
     gateway,
     governance,
     navOracle,
+    ...(deployment.managerAgentId !== undefined
+      ? { agent: `eip155:${deployment.chainId}:${ERC8004.identityRegistry}/${deployment.managerAgentId}` }
+      : {}),
     consentRegistry: deployment.consentRegistry as Address,
     creditVault: deployment.creditVault as Address,
     adapterNames: {

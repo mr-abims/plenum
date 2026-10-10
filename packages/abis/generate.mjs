@@ -16,6 +16,19 @@ for (const name of CONTRACTS) {
   writeFileSync(join(import.meta.dirname, "json", `${name}.json`), JSON.stringify(abi, null, 2) + "\n");
   ts += `export const ${lower(name)}Abi = ${JSON.stringify(abi)} as const;\n\n`;
 }
+// ERC-8004 registries are not ours: official ABIs vendored from github.com/erc-8004/erc-8004-contracts (abis/),
+// checked against the selectors deployed on Monad testnet.
+for (const name of ["IdentityRegistry", "ReputationRegistry"]) {
+  const abi = JSON.parse(readFileSync(join(import.meta.dirname, "erc8004", `${name}.json`), "utf8"));
+  ts += `export const erc8004${name}Abi = ${JSON.stringify(abi)} as const;\n\n`;
+}
+ts += `/** Canonical ERC-8004 registries on Monad testnet (chain 10143). */
+export const ERC8004 = {
+  identityRegistry: "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+  reputationRegistry: "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+} as const;
+
+`;
 ts += `/** Reason enum order from contracts/src/interfaces/Types.sol (ABI: decoded by ordinal). */
 export const REASONS = [
   "OK", "ADAPTER_NOT_ALLOWED", "WEIGHT_OUT_OF_BAND", "LIQUIDITY_FLOOR", "TRADE_TOO_LARGE", "TURNOVER_CAP",

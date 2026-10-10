@@ -40,6 +40,8 @@ export const DeploymentSchema = z.object({
   creditVault: address,
   gold: address,
   factory: address,
+  /** The manager's ERC-8004 identity (agent NFT id in the canonical IdentityRegistry), set by scripts/register-agent.ts. */
+  managerAgentId: z.number().int().nonnegative().optional(),
 });
 export type Deployment = z.infer<typeof DeploymentSchema>;
 

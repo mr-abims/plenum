@@ -16,5 +16,7 @@
   "rehearsalPlenum": "0xB064930973b05060CD0972b66847eCD27171aea4",
   "attestationRegistrar": "0xD08819268ACf957F479cdDdBa3b47B008c6041cE",
   "cleanverseAttester": "0x77B3d364521B10aE6a6B91a6Dd1081Bf140EE0B5",
-  "showcasePlenum": "0x856c63bBD03F051fCf7291fA1ae578b146153f24"
+  "showcasePlenum": "0x856c63bBD03F051fCf7291fA1ae578b146153f24",
+  "managerAgentId": 2128,
+  "managerAgentTx": "0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503"
 }

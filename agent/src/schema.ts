@@ -45,4 +45,6 @@ export interface Memo extends Plan {
   modelId: string;
   promptVersion: string;
   tool: "execute_in_band" | "escalate";
+  /** The manager's ERC-8004 identity, when registered. */
+  agent?: string;
 }

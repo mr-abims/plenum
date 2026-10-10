@@ -19,6 +19,8 @@ export const DEPLOYMENT = deployment as unknown as {
   rehearsalPlenum?: Address;
   /** Long-lived group the landing page's rule console asks live (Showcase.s.sol). */
   showcasePlenum?: Address;
+  /** The AI manager's ERC-8004 agent id in the canonical IdentityRegistry (agent/scripts/register-agent.ts). */
+  managerAgentId?: number;
 };
 
 export const CHAIN = DEPLOYMENT.chainId === monadTestnet.id ? monadTestnet : foundry;

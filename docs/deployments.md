@@ -33,6 +33,23 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 
 | Plenum | [`0xB064930973b05060CD0972b66847eCD27171aea4`](https://testnet.monadvision.com/address/0xB064930973b05060CD0972b66847eCD27171aea4) |
 
+## Showcase plenum (Balanced, 30-day price window)
+
+Asked live by the landing page's "Try to break the rules" console through `ManagerGateway.simulate`. Priced by the CRE workflow.
+
+| Contract | Address |
+| --- | --- |
+| Plenum | [`0x856c63bBD03F051fCf7291fA1ae578b146153f24`](https://testnet.monadvision.com/address/0x856c63bBD03F051fCf7291fA1ae578b146153f24) |
+| ManagerGateway | [`0x925a25B824b5880Ab3B7598f0653d56bB401721a`](https://testnet.monadvision.com/address/0x925a25B824b5880Ab3B7598f0653d56bB401721a) |
+
+## AI manager identity (ERC-8004)
+
+| What | Where |
+| --- | --- |
+| IdentityRegistry (canonical, Monad testnet) | [`0x8004A818BFB912233c491871b3d84c89A494BD9e`](https://testnet.monadvision.com/address/0x8004A818BFB912233c491871b3d84c89A494BD9e) |
+| ReputationRegistry (canonical, Monad testnet) | [`0x8004B663056A597Dffe9eCcC1965A193B7388713`](https://testnet.monadvision.com/address/0x8004B663056A597Dffe9eCcC1965A193B7388713) |
+| Plenum Manager: agent **#2128**, owned by the operator `0x6B050A5Acc5A693916614C2fb365Dc60cc9db8D8` | agent card: https://plenumx.vercel.app/agents/plenum-manager.json |
+
 ## Evidence
 
 | What | Transaction |
@@ -44,6 +61,8 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 | Member approves proposal 2 | [0x28c7f1fd…](https://testnet.monadvision.com/tx/0x28c7f1fd423c9d303215f9a0e553e56ae42bd9f2fad8a5623a076911a113a615) |
 | Proposal 2 executed after quorum (re-checks allowlist and NAV freshness) | [0x5dc4255f…](https://testnet.monadvision.com/tx/0x5dc4255f9a1dc9a0f17681ba5bb86d01bad534e446d57546e9c3a7ce9b3a1447) |
 | A signed Cleanverse attestation (MOCK signer) verifies a new person: `checkMember` goes from `MEMBER_NOT_VERIFIED` to `OK`; the deployer can no longer set identities directly | [0xc9d9acad…](https://testnet.monadvision.com/tx/0xc9d9acad40b268366d2352b7457fef8e98e3f3013394372f38fd8a52c18251ba) |
+| The manager registers its ERC-8004 identity (agent #2128, `tokenURI` = agent card) | [0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) |
+| A group member rates the in-band action 100/100 (`plenum`/`rebalance`, `feedbackHash` = its rationale hash); `getSummary` over the group's members returns count 1, and over a non-member returns 0 | [0xf69991fb…](https://testnet.monadvision.com/tx/0xf69991fb4ffd4df27da9d90a7b469740dbc16141b15f2f44adcc0b0805a46113) |
 | Forced call with the manager key to move 4,000 to 0xABC… reverts `PolicyViolation(ADAPTER_NOT_ALLOWED)` | [0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
 
 ## Notes

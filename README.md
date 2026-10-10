@@ -45,6 +45,10 @@ flowchart LR
   E[Envio HyperIndex] -.->|events| UI[Member app]
 ```
 
+**Check it yourself:** the landing page's rule console asks a real group's contract (`ManagerGateway.simulate` on
+Monad testnet), and [`/verify`](https://plenumx.vercel.app/verify) checks any manager transaction and its memo against
+the chain.
+
 **The security claim the tests prove:** the worst a fully compromised manager can do is move money between assets the
 group already approved, within size, turnover and cooldown limits. **It can never withdraw.**
 
@@ -59,6 +63,14 @@ group already approved, within size, turnover and cooldown limits. **It can neve
    rules or escalates. Each action commits a hash of its reasoning and the model id onchain.
 5. **Members stay in charge.** Bigger moves need their approval (one passkey transaction each). Any two members can
    pause the manager instantly. Members share private data with the manager only through expiring onchain consent.
+
+## The AI manager has an identity
+
+The manager is **ERC-8004 agent #2128** in Monad testnet's canonical IdentityRegistry, owned by its own operator key,
+with an [agent card](https://plenumx.vercel.app/agents/plenum-manager.json) stating what it can and can never do.
+Every memo it commits names that identity. Members rate its actions in the canonical ReputationRegistry, each rating
+tied to the action's rationale hash, and the app counts only ratings from the group's own verified members, so the
+score can't be bought by outside accounts.
 
 ## What is in the box
 
