@@ -1,0 +1,5 @@
+# CRE project settings (format from `cre init`, CLI v1.38). Monad testnet only.
+staging-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz

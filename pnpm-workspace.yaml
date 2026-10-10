@@ -21,3 +21,9 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-arm64-msvc@16.4.0'
   - '@next/swc-win32-x64-msvc@16.4.0'
   - next@16.4.0
+# @chainlink/cre-sdk's compiler scripts import `typescript` at runtime but only list it as a devDependency,
+# so they would pick up the hoisted TypeScript 7 (no JS API). Pin the version the SDK is built against.
+packageExtensions:
+  '@chainlink/cre-sdk':
+    dependencies:
+      typescript: 5.9.3

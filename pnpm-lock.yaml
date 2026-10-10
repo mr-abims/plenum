@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-X2xFtht6WfaEaXesHSOyt9i4NG/BiLJnDjXrtPbGu4k=
+
 importers:
 
   .: {}
@@ -110,7 +112,7 @@ importers:
     dependencies:
       '@chainlink/cre-sdk':
         specifier: 1.23.0
-        version: 1.23.0(typescript@5.9.3)
+        version: 1.23.0
       viem:
         specifier: 2.57.3
         version: 2.57.3(typescript@5.9.3)(zod@4.6.5)
@@ -2460,7 +2462,7 @@ snapshots:
     optionalDependencies:
       zod: 3.25.76
 
-  '@chainlink/cre-sdk@1.23.0(typescript@5.9.3)':
+  '@chainlink/cre-sdk@1.23.0':
     dependencies:
       '@bufbuild/protobuf': 2.6.3
       '@bufbuild/protoc-gen-es': 2.6.3(@bufbuild/protobuf@2.6.3)
@@ -2469,13 +2471,13 @@ snapshots:
       '@solana/addresses': 6.10.0(typescript@5.9.3)
       '@solana/codecs': 6.10.0(typescript@5.9.3)
       '@standard-schema/spec': 1.0.0
+      typescript: 5.9.3
       viem: 2.57.3(typescript@5.9.3)(zod@3.25.76)
       zod: 3.25.76
     transitivePeerDependencies:
       - bufferutil
       - fastestsmallesttextencoderdecoder
       - supports-color
-      - typescript
       - utf-8-validate
 
   '@elastic/ecs-helpers@1.1.0':

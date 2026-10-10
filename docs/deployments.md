@@ -37,6 +37,7 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 | What | Transaction |
 | --- | --- |
 | Manager executes an in-band rebalance (withdraw 300 from the T-bill sleeve) with rationale hash and model ID | [0xbf0a8c87…](https://testnet.monadvision.com/tx/0xbf0a8c8750fb5baa0a0859d0b17134c0b322d4329b1146a7a40e6019f26316ea) |
+| Chainlink CRE workflow (simulated with `--broadcast`) reads holdings at the finalized block and writes `NavReported(…, CRE)` through the mock forwarder | [0x3c0dcc7b…](https://testnet.monadvision.com/tx/0x3c0dcc7b2cd7b6ab02bade2bead41905440831511db57345ae32d6551f8e2ff8) |
 | Forced call with the manager key to move 4,000 to 0xABC… reverts `PolicyViolation(ADAPTER_NOT_ALLOWED)` | [0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
 
 ## Notes

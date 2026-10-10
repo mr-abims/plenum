@@ -1,0 +1,8 @@
+# CRE workflow settings (format from `cre init`, CLI v1.38).
+staging-settings:
+  user-workflow:
+    workflow-name: "plenum-nav"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.json"
+    secrets-path: ""

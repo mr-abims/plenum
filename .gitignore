@@ -36,3 +36,6 @@ contracts/deployments/31337.json
 
 # Forge broadcast logs (addresses are recorded in contracts/deployments/)
 contracts/broadcast/
+
+# CRE CLI build artifacts
+cre/**/.cre_build_tmp.js

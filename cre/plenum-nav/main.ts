@@ -20,6 +20,8 @@ import { z } from "zod";
 import { iAssetAdapterAbi, mandateAbi, plenumAbi } from "./abis";
 import { computeNav, encodeNavReport, type SleeveRead } from "./nav";
 
+const TX_STATUS = ["TX_STATUS_FATAL", "TX_STATUS_REVERTED", "TX_STATUS_SUCCESS"] as const;
+
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 
 const configSchema = z.object({
@@ -78,7 +80,7 @@ function reportNav(runtime: Runtime<Config>): string {
         gasConfig: { gasLimit: runtime.config.gasLimit }, // Monad bills the declared limit; keep it tight
       })
       .result();
-    results.push(`${plenum}:${reply.txStatus}`);
+    results.push(`${plenum}:${TX_STATUS[reply.txStatus] ?? reply.txStatus}`);
   }
   return results.join(" ");
 }
