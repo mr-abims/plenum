@@ -1,7 +1,9 @@
 {
   "schedule": "0 */1 * * * *",
   "chainSelectorName": "monad-testnet",
-  "navOracle": "0x0000000000000000000000000000000000000000",
-  "plenums": ["0x0000000000000000000000000000000000000000"],
+  "navOracle": "0xC45Fa55564BF4B53729c139D4613BfA295f3ad4a",
+  "plenums": [
+    "0xB064930973b05060CD0972b66847eCD27171aea4"
+  ],
   "gasLimit": "300000"
 }

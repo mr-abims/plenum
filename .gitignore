@@ -33,3 +33,6 @@ cre/**/.cre/
 
 # Local-chain deployment files
 contracts/deployments/31337.json
+
+# Forge broadcast logs (addresses are recorded in contracts/deployments/)
+contracts/broadcast/

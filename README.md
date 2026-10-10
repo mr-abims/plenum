@@ -21,6 +21,10 @@ by its members' verified identities and by an independent price, all enforced by
 | `packages/crypto/` | Data-room cryptography |
 | `docs/` | Spec, session prompts, AI disclosure, threat model, bounty adherence |
 
+## Deployed (Monad testnet)
+
+All contract addresses, source verification and evidence transactions: [docs/deployments.md](docs/deployments.md).
+
 ## Setup
 
 ```sh
