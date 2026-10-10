@@ -166,7 +166,7 @@ function Start() {
           </Button>
         </div>
         <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
-          Provider: <MockTag>MOCK identity provider</MockTag> standing in for Cleanverse A-Pass on testnet.
+          Verified through a signed Cleanverse attestation, checked onchain. On testnet a <MockTag>MOCK signer</MockTag> signs until Cleanverse issues its own key.
         </p>
       </Card>
 

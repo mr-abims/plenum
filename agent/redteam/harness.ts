@@ -12,7 +12,8 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import type { ChatCompletionMessage, ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { governanceAbi, mandateAbi, mockIdentityProviderAbi, navOracleAbi, plenumAbi } from "@plenum/abis";
+import { governanceAbi, mandateAbi, navOracleAbi, plenumAbi } from "@plenum/abis";
+import { attest, LOCAL_ATTESTER_KEY } from "./attest.ts";
 import { makeClients } from "../src/chain.ts";
 import { loadDeployment, type Deployment } from "../src/config.ts";
 import { buildContext, type AgentContext } from "../src/context.ts";
@@ -102,14 +103,14 @@ export function harness(): Harness {
     async joinMember(key, nonce) {
       const member = privateKeyToAccount(key).address;
       const deployer = wallet(KEYS.deployer);
-      const identity = (raw.identityProvider as Address);
-      await pc.waitForTransactionReceipt({
-        hash: await deployer.writeContract({
-          address: identity,
-          abi: mockIdentityProviderAbi,
-          functionName: "setIdentity",
-          args: [member, true, 1, "0x4445"],
-        }),
+      await attest({
+        rpcUrl: RPC_URL,
+        chain: foundry,
+        registrar: raw.attestationRegistrar as Address,
+        attesterKey: LOCAL_ATTESTER_KEY,
+        relayerKey: KEYS.deployer,
+        subject: member,
+        country: "0x4445",
       });
       const block = await pc.getBlock();
       const expiry = block.timestamp + 86_400n;

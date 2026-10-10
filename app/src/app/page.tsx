@@ -146,7 +146,7 @@ export default async function Landing() {
         <div className="space-y-2">
           <p className="font-medium text-ink">Built with</p>
           <ul className="space-y-1 font-mono text-xs">
-            {["Monad", "Chainlink CRE", "Envio HyperIndex", "Qwen 3.8 Max", "Mera passkeys", "Cleanverse A-Pass (MOCK)"].map((s) => (
+            {["Monad", "Chainlink CRE", "Envio HyperIndex", "Qwen 3.8 Max", "Mera passkeys", "Cleanverse attestations (MOCK signer)"].map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>

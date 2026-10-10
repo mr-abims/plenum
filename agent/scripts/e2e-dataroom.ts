@@ -9,7 +9,8 @@ import { createHash } from "node:crypto";
 import { createPublicClient, createWalletClient, encodeAbiParameters, http, keccak256, toHex, hexToBytes, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { consentRegistryAbi, mockIdentityProviderAbi, plenumAbi } from "@plenum/abis";
+import { consentRegistryAbi, plenumAbi } from "@plenum/abis";
+import { attest, LOCAL_ATTESTER_KEY } from "../redteam/attest.ts";
 import {
   addReader, blobMessage, canonicalJson, decryptDocument, deriveEncryptionKey, encryptDocument, memoDocId, publicKeyToBytes32, riskDocId, type Envelope,
 } from "@plenum/crypto";
@@ -53,8 +54,8 @@ async function putBlob(key: Hex, id: string, env: Envelope) {
   if (!res.ok) throw new Error(`PUT ${id}: ${res.status} ${await res.text()}`);
 }
 
-// 1. Member gets verified (MOCK provider) and joins with an invite and their data-room public key.
-await wait(await wallet(DEPLOYER).writeContract({ address: raw.identityProvider, abi: mockIdentityProviderAbi, functionName: "setIdentity", args: [member.address, true, 1, "0x4e47"] }));
+// 1. Member is verified by a signed Cleanverse attestation (MOCK attester) and joins with an invite and their data-room public key.
+await attest({ rpcUrl: RPC, chain: foundry, registrar: raw.attestationRegistrar, attesterKey: LOCAL_ATTESTER_KEY, relayerKey: DEPLOYER, subject: member.address, country: "0x4e47" });
 const expiry = (await pc.getBlock()).timestamp + 86_400n;
 const sig = await wallet(DEPLOYER).signTypedData({
   domain: { name: "Plenum", version: "1", chainId: 31337, verifyingContract: plenum },

@@ -5,7 +5,7 @@ import { join } from "node:path";
 const OUT = join(import.meta.dirname, "../../contracts/out");
 const CONTRACTS = [
   "Plenum", "Mandate", "Governance", "ManagerGateway", "NavOracle", "ConsentRegistry", "PlenumFactory",
-  "IAssetAdapter", "ComplianceGate", "MockIdentityProvider", "MockAToken", "MockTBillVault", "MockCreditVault", "MockGold",
+  "IAssetAdapter", "ComplianceGate", "MockIdentityProvider", "CleanverseAttestationRegistrar", "MockAToken", "MockTBillVault", "MockCreditVault", "MockGold",
 ];
 
 const lower = (s) => s[0].toLowerCase() + s.slice(1);

@@ -11,6 +11,7 @@ import {ConsentRegistry} from "../src/core/ConsentRegistry.sol";
 import {PlenumFactory} from "../src/core/PlenumFactory.sol";
 import {ComplianceGate} from "../src/compliance/ComplianceGate.sol";
 import {MockIdentityProvider} from "../src/compliance/MockIdentityProvider.sol";
+import {CleanverseAttestationRegistrar} from "../src/compliance/CleanverseAttestationRegistrar.sol";
 import {MockAToken} from "../src/mocks/MockAToken.sol";
 import {MockTBillVault} from "../src/adapters/MockTBillVault.sol";
 import {MockCreditVault} from "../src/adapters/MockCreditVault.sol";
@@ -19,11 +20,13 @@ import {MockGold} from "../src/adapters/MockGold.sol";
 /// @notice Deploys the shared singletons, MOCK identity/A-Token/adapters, bundle implementations and the factory,
 ///         then writes addresses to deployments/<chainId>.json. Monad testnet (10143) or a local chain only.
 /// @dev Env: DEPLOYER_PRIVATE_KEY, FALLBACK_NAV_WRITER_KEY, CRE_FORWARDER (defaults to the CRE mock forwarder
-///      for `cre workflow simulate --broadcast`), CREDIT_REDEEM_DELAY (seconds, default 300).
+///      for `cre workflow simulate --broadcast`), CREDIT_REDEEM_DELAY (seconds, default 300),
+///      CLEANVERSE_ATTESTER_KEY (MOCK attester until Cleanverse issues a signer; anvil key 4 locally).
 contract Deploy is Script {
     address constant CRE_MOCK_FORWARDER_MONAD_TESTNET = 0xB9F79d863261869B234c481D1f9A7af84AeAd192;
     uint256 constant ANVIL_KEY_0 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
     uint256 constant ANVIL_KEY_1 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
+    uint256 constant ANVIL_KEY_4 = 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a;
 
     struct Deployed {
         address deployer;
@@ -39,6 +42,8 @@ contract Deploy is Script {
         MockCreditVault credit;
         MockGold gold;
         PlenumFactory factory;
+        CleanverseAttestationRegistrar registrar;
+        address attester;
     }
 
     function run() external {
@@ -48,6 +53,7 @@ contract Deploy is Script {
         d.deployer = vm.addr(pk);
         d.fallbackWriter = vm.addr(vm.envOr("FALLBACK_NAV_WRITER_KEY", ANVIL_KEY_1));
         d.forwarder = vm.envOr("CRE_FORWARDER", CRE_MOCK_FORWARDER_MONAD_TESTNET);
+        d.attester = vm.addr(vm.envOr("CLEANVERSE_ATTESTER_KEY", ANVIL_KEY_4));
         d.startBlock = block.number;
         uint32 redeemDelay = uint32(vm.envOr("CREDIT_REDEEM_DELAY", uint256(300)));
 
@@ -95,6 +101,9 @@ contract Deploy is Script {
         t.registerApass(address(d.credit));
         t.registerApass(address(d.gold));
         d.identity.setIdentity(d.deployer, true, 1, bytes2("US")); // MOCK: demo operator funds MOCK yield
+        // From here on, identities change only through signed Cleanverse attestations (SPEC A22).
+        d.registrar = new CleanverseAttestationRegistrar(d.identity, d.attester, d.deployer);
+        d.identity.transferOwnership(address(d.registrar));
     }
 
     function _write(Deployed memory d) internal {
@@ -105,6 +114,8 @@ contract Deploy is Script {
         vm.serializeAddress(k, "fallbackNavWriter", d.fallbackWriter);
         vm.serializeAddress(k, "creForwarder", d.forwarder);
         vm.serializeAddress(k, "identityProvider", address(d.identity));
+        vm.serializeAddress(k, "attestationRegistrar", address(d.registrar));
+        vm.serializeAddress(k, "cleanverseAttester", d.attester);
         vm.serializeAddress(k, "aToken", address(d.aToken));
         vm.serializeAddress(k, "navOracle", address(d.oracle));
         vm.serializeAddress(k, "complianceGate", address(d.gate));

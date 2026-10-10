@@ -44,7 +44,10 @@ Fuzz: unit-math round trip (invariant 7), first-depositor inflation (attacker ne
 | Mock price feeds (MockGold) and MOCK identity/A-Token | Hackathon build only; labelled MOCK everywhere |
 | Fallback NAV key misuse | Demo-only, labelled `FALLBACK`, removable by the owner (`setFallbackWriter(0)`) |
 | Bad but in-band allocation by a compromised manager | Bounded by turnover cap per day until members pause |
-| Cleanverse validator interface unconfirmed | `CleanverseIdentityProvider` stays a stub until confirmed |
+| Cleanverse signer not yet issued | Attestations are signed by a labelled MOCK attester key; `setSigner` swaps in Cleanverse's key with one owner call (SPEC A22) |
+| Attester key compromise | Attacker could verify arbitrary accounts until the owner calls `setSigner`; it still cannot move money outside allowlisted adapters or bypass mandate checks |
+| Replayed or stale attestation | Rejected: single-use nonces, `issuedAt` must strictly increase per subject, expired attestations refused (`CleanverseAttestationRegistrar` tests) |
+| Lapsed verification | Anyone can call `expire(subject)` after expiry; contributions and payouts are then refused onchain (`test_expiryGatesAssetMovement`) |
 
 ## Static analysis (Slither 0.11.5)
 

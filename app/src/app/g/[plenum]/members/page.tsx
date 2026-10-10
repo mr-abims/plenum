@@ -136,7 +136,7 @@ export default function MembersPage() {
           </ul>
         )}
         <p className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4 text-xs text-muted">
-          Verified by <MockTag>MOCK identity provider</MockTag> standing in for Cleanverse A-Pass. Names stay private: only account IDs are onchain.
+          Verified through signed Cleanverse attestations, checked onchain (<MockTag>MOCK signer</MockTag> on testnet). Names stay private: only account IDs are onchain.
         </p>
       </Card>
     </div>
