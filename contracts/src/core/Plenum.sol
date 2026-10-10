@@ -167,7 +167,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
             Action calldata act = actions[k];
             if (!m.isAllowed(act.adapter)) revert PolicyViolation(Reason.ADAPTER_NOT_ALLOWED);
             IAssetAdapter adapter = IAssetAdapter(act.adapter);
-            uint256 result;
+            uint256 result = 0; // requestId for RequestRedeem, assets for Claim, else 0
             if (act.op == Op.Deposit) {
                 IERC20(aToken).forceApprove(act.adapter, act.assets);
                 adapter.deposit(act.assets);

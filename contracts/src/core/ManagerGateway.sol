@@ -69,8 +69,8 @@ contract ManagerGateway is IManagerGateway, Initializable, ReentrancyGuard {
     /// @inheritdoc IManagerGateway
     function executeInBand(Action[] calldata actions, bytes32 rationaleHash, bytes32 modelId)
         external
-        onlyManager
         nonReentrant
+        onlyManager
         returns (Reason r)
     {
         _requireAllowlisted(actions);
@@ -96,8 +96,8 @@ contract ManagerGateway is IManagerGateway, Initializable, ReentrancyGuard {
     ///      emits Escalated in the same transaction.
     function escalate(Action[] calldata actions, bytes32 rationaleHash, bytes32 modelId)
         external
-        onlyManager
         nonReentrant
+        onlyManager
         returns (uint256 proposalId)
     {
         if (IGovernance(governance).paused()) revert PolicyViolation(Reason.PAUSED);
