@@ -11,7 +11,7 @@ import { DEPLOYMENT, EXPLORER } from "@/lib/config";
 import { EVIDENCE, EVIDENCE_EXPLORER } from "@/lib/evidence";
 
 const FLOW = [
-  { icon: UsersThree, title: "Start a group, or go solo", body: "Invest with people you know or on your own. Pick Conservative, Balanced or Liquidity-first; the template becomes your mandate, written into a contract." },
+  { icon: UsersThree, title: "Start a group", body: "Pick Conservative, Balanced or Liquidity-first. The template becomes your mandate, written into a contract. Investing alone? A personal portfolio runs on the same rules." },
   { icon: LinkSimple, title: "Invite verified people", body: "Send a single-use link. Only people who passed the identity check can join or move money." },
   { icon: HandCoins, title: "Contribute", body: "Put money in and receive units at the latest independent price. See it in your own currency." },
   { icon: Robot, title: "Let the manager work", body: "It rebalances inside the rules and explains every move with a fingerprint of its reasoning onchain." },
@@ -41,6 +41,9 @@ export default async function Landing() {
               {t("join")}
             </Link>
           </div>
+          <Link href="/create?mode=personal" className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline">
+            {t("solo")} <ArrowRight size={14} />
+          </Link>
         </Reveal>
         <Reveal delay={0.15}>
           <HeroChamber />

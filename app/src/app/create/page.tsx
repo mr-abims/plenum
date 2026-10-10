@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { decodeEventLog, type Address } from "viem";
 import { ArrowLeft, ArrowRight, Check, Coins, Gavel, HandPalm, Prohibit, Scales, User, UsersThree, Vault } from "@phosphor-icons/react";
@@ -21,12 +21,22 @@ import { mandateConfig, TEMPLATES, type Template } from "@/lib/templates";
 import { useTx } from "@/lib/useTx";
 
 export default function CreatePage() {
+  return (
+    <Suspense>
+      <Create />
+    </Suspense>
+  );
+}
+
+function Create() {
   const { session } = useSession();
   const router = useRouter();
   const reduce = useReducedMotion();
   const [step, setStep] = useState<0 | 1>(0);
-  const [personal, setPersonal] = useState(false);
-  const [name, setName] = useState("");
+  // Groups are the default; "?mode=personal" (from the landing page) preselects a personal portfolio.
+  const startPersonal = useSearchParams().get("mode") === "personal";
+  const [personal, setPersonal] = useState(startPersonal);
+  const [name, setName] = useState(startPersonal ? "My portfolio" : "");
   const noun = personal ? "portfolio" : "group";
   const [template, setTemplate] = useState<Template>(TEMPLATES[1]);
   const [verified, setVerified] = useState<boolean | null>(null);
@@ -39,9 +49,9 @@ export default function CreatePage() {
   if (!session) {
     return (
       <div className="mx-auto max-w-lg pt-16 text-center">
-        <h1 className="font-display text-4xl font-semibold tracking-[-0.035em]">Start investing</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-[-0.035em]">{personal ? "Start a personal portfolio" : "Start a group"}</h1>
         <p className="mt-4 text-muted">First, set up your passkey account. It takes a few seconds.</p>
-        <Link href="/start?next=/create" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 text-sm font-medium text-accent-ink">
+        <Link href={`/start?next=${encodeURIComponent(personal ? "/create?mode=personal" : "/create")}`} className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 text-sm font-medium text-accent-ink">
           Get started <ArrowRight size={16} />
         </Link>
       </div>
