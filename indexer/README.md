@@ -20,3 +20,9 @@ pnpm --filter @plenum/indexer dev            # needs Docker running (Postgres + 
 ```
 
 Fallback if Envio is unavailable: the app reads the same events with direct viem log queries.
+
+## Hosted (Envio)
+
+Deployed on Envio's hosted service from this repo: root directory `indexer`, config `config.yaml`, branch `main`.
+Every push to `main` redeploys it. Verified to install with pnpm 10.32 (the hosted builder) from a clean clone.
+The app reads it through `NEXT_PUBLIC_INDEXER_URL` (set in Vercel to the hosted GraphQL endpoint).
