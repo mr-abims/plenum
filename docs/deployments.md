@@ -46,6 +46,11 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 
 ## Notes
 
+- **Model provenance on the rehearsal transactions:** the in-band rebalances (`0xbf0a8c87…`, `0x8ad9effd…`), the escalation
+  (`0x693cd26c…`) and the forced call (`0x42254307…`) record model id `qwen3.8-max`, but no model ran: the plan was scripted
+  (rehearsal tooling) or sent with `cast`. The scripted stand-in now records `scripted-plan`. Transactions written by a live
+  model will be listed separately.
+
 - Monad's public RPC allows about 15 requests/second: the app and agent batch reads through Multicall3 and retry with backoff.
 - `agent/scripts/testnet-rehearsal.ts` reproduces the evidence above end to end (CRE pricing, in-band, escalation, approval, execution, memo check).
 

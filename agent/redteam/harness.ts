@@ -134,7 +134,8 @@ export function harness(): Harness {
 
 /** Stand-in for Qwen: replays scripted turns and records every prompt it was shown. */
 export class ScriptedModel implements ChatModel {
-  readonly id = "qwen3.8-max";
+  /** Recorded onchain as the model id, so it must never claim to be a real model. */
+  readonly id = "scripted-plan";
   readonly seen: ChatCompletionMessageParam[][] = [];
   private i = 0;
 

@@ -51,7 +51,7 @@ describe("happy path", () => {
       .find((e) => e.eventName === "ManagerAction");
     expect(ev?.args).toMatchObject({
       rationaleHash: res.memoHash,
-      modelId: stringToHex("qwen3.8-max", { size: 32 }),
+      modelId: stringToHex("scripted-plan", { size: 32 }),
       reason: 0,
     });
   });

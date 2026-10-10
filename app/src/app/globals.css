@@ -1,64 +1,203 @@
 @import "tailwindcss";
 
-/* Plenum design tokens. Calm, editorial, trustworthy: paper and ink, one accent, honest status colours. */
+/*
+ * Plenum design tokens: "The Chamber".
+ * Graphite instrument surfaces, one locked accent ("mandate lime" = inside the rules),
+ * semantic colours kept separate from the accent. Dark is the default; light follows the
+ * system setting or the header toggle (data-theme on <html>).
+ */
 :root {
-  --paper: #f6f4ef;
-  --surface: #fffdf8;
-  --ink: #1b1a17;
-  --muted: #6a665d;
-  --line: #e2ddd2;
-  --accent: #1f5f4a;
-  --accent-ink: #f6f4ef;
-  --ok: #2f6b3f;
-  --warn: #9a6200;
-  --bad: #a3322a;
-  --mock: #6b4fa0;
+  color-scheme: dark;
+  --page: #0c0e0d;
+  --raised: #131614;
+  --sunk: #090b0a;
+  --well: #1b1f1c;
+  --line: #262b27;
+  --line-strong: #353b36;
+  --ink: #ecede8;
+  --muted: #9aa097;
+  --faint: #6c726a;
+  --accent: #c8f25a;
+  --accent-ink: #11160a;
+  --accent-soft: rgb(200 242 90 / 0.12);
+  --ok: #c8f25a;
+  --warn: #f2b33d;
+  --bad: #ff6b57;
+  --mock: #b49cff;
+  --info: #8fb3ff;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 24px 48px -24px rgb(0 0 0 / 0.6);
+  --grain-opacity: 0.035;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #12130f;
-    --surface: #1a1b16;
-    --ink: #ece9e0;
-    --muted: #a19c90;
-    --line: #2d2e27;
-    --accent: #7cc4a5;
-    --accent-ink: #10120e;
-    --ok: #7fc38f;
-    --warn: #e5b45a;
-    --bad: #ef8a80;
-    --mock: #b9a2ea;
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --page: #f3f4f1;
+    --raised: #fbfbf9;
+    --sunk: #e9ebe6;
+    --well: #e4e7e1;
+    --line: #dadfd7;
+    --line-strong: #c4cabf;
+    --ink: #0f1210;
+    --muted: #565d55;
+    --faint: #7d8479;
+    --accent: #4a6400;
+    --accent-ink: #f6fbe9;
+    --accent-soft: rgb(74 100 0 / 0.1);
+    --ok: #3f6a00;
+    --warn: #9a6200;
+    --bad: #c2321f;
+    --mock: #6b4fc0;
+    --info: #2d58c8;
+    --shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 20px 40px -28px rgb(24 32 20 / 0.35);
+    --grain-opacity: 0;
   }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #f3f4f1;
+  --raised: #fbfbf9;
+  --sunk: #e9ebe6;
+  --well: #e4e7e1;
+  --line: #dadfd7;
+  --line-strong: #c4cabf;
+  --ink: #0f1210;
+  --muted: #565d55;
+  --faint: #7d8479;
+  --accent: #4a6400;
+  --accent-ink: #f6fbe9;
+  --accent-soft: rgb(74 100 0 / 0.1);
+  --ok: #3f6a00;
+  --warn: #9a6200;
+  --bad: #c2321f;
+  --mock: #6b4fc0;
+  --info: #2d58c8;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 20px 40px -28px rgb(24 32 20 / 0.35);
+  --grain-opacity: 0;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
+  --color-page: var(--page);
+  --color-raised: var(--raised);
+  --color-sunk: var(--sunk);
+  --color-well: var(--well);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
-  --color-line: var(--line);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
   --color-mock: var(--mock);
-  --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display-face), ui-serif, Georgia, serif;
+  --color-info: var(--info);
+  /* Kept for pages not yet migrated: old names map onto the new surfaces. */
+  --color-paper: var(--sunk);
+  --color-surface: var(--raised);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-display: var(--font-bricolage), var(--font-geist), ui-sans-serif, sans-serif;
+  --shadow-panel: var(--shadow);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
-  background: var(--paper);
+  background: var(--page);
   color: var(--ink);
 }
 body {
-  background: var(--paper);
+  background: var(--page);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+.font-display {
+  font-variation-settings: "opsz" 96;
+}
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Film grain: fixed, non-interactive, dark theme only (opacity token is 0 in light). */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Faint chamber grid used behind hero and dial figures. */
+.chamber-grid {
+  background-image: radial-gradient(circle at center, var(--line) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* Horizontal scroll rails: no visible scrollbar, snap per item. */
+.rail {
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}
+.rail > * {
+  scroll-snap-align: start;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pulse::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: currentColor;
+    animation: pulse-ring 2.2s var(--ease-out-expo) infinite;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+    animation: shimmer 1.6s infinite;
+  }
+  .spin {
+    animation: spin 0.9s linear infinite;
+  }
 }

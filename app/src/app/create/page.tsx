@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { decodeEventLog, type Address } from "viem";
+import { ArrowLeft, ArrowRight, Check, Coins, Gavel, HandPalm, Prohibit, Scales, Vault } from "@phosphor-icons/react";
 import { plenumAbi, plenumFactoryAbi } from "@plenum/abis";
 import { publicKeyToBytes32 } from "@plenum/crypto";
-import { Button, Card, Eyebrow, Field, H1, Notice, inputClass } from "@/components/ui";
+import { ChamberDial, rowsFromTemplate } from "@/components/ChamberDial";
+import { TxSteps } from "@/components/TxSteps";
+import { Button, Card, Field, MockTag, Notice, inputClass } from "@/components/ui";
 import { publicClient, send } from "@/lib/chain";
 import { adapterName, DEPLOYMENT, MANAGER_ADDRESS } from "@/lib/config";
 import { pct } from "@/lib/format";
@@ -14,15 +18,17 @@ import { encodeInvite, signInvite } from "@/lib/invite";
 import { isVerified } from "@/lib/plenum";
 import { useSession } from "@/lib/session";
 import { mandateConfig, TEMPLATES, type Template } from "@/lib/templates";
+import { useTx } from "@/lib/useTx";
 
 export default function CreatePage() {
   const { session } = useSession();
   const router = useRouter();
+  const reduce = useReducedMotion();
+  const [step, setStep] = useState<0 | 1>(0);
   const [name, setName] = useState("");
   const [template, setTemplate] = useState<Template>(TEMPLATES[1]);
   const [verified, setVerified] = useState<boolean | null>(null);
-  const [step, setStep] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const tx = useTx();
 
   useEffect(() => {
     if (session) void isVerified(session.account.address).then(setVerified);
@@ -30,11 +36,11 @@ export default function CreatePage() {
 
   if (!session) {
     return (
-      <div className="mx-auto max-w-lg pt-10">
-        <H1>Create a group</H1>
-        <p className="mt-4 text-muted">First, set up your passkey account.</p>
-        <Link className="mt-6 inline-block text-accent" href="/start?next=/create">
-          Get started →
+      <div className="mx-auto max-w-lg pt-16 text-center">
+        <h1 className="font-display text-4xl font-semibold tracking-[-0.035em]">Start a group</h1>
+        <p className="mt-4 text-muted">First, set up your passkey account. It takes a few seconds.</p>
+        <Link href="/start?next=/create" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 text-sm font-medium text-accent-ink">
+          Get started <ArrowRight size={16} />
         </Link>
       </div>
     );
@@ -42,106 +48,174 @@ export default function CreatePage() {
 
   async function create() {
     if (!session) return;
-    setError(null);
-    try {
-      if (!MANAGER_ADDRESS) throw new Error("The AI manager's address is not configured (NEXT_PUBLIC_MANAGER_ADDRESS).");
-      setStep("Creating your group…");
-      const hash = await send(session.account, {
-        address: DEPLOYMENT.factory,
-        abi: plenumFactoryAbi,
-        functionName: "createPlenum",
-        args: [name.trim(), template.id, mandateConfig(template), MANAGER_ADDRESS],
-      });
-      const receipt = await publicClient.getTransactionReceipt({ hash });
-      let plenum: Address | undefined;
-      for (const log of receipt.logs) {
-        try {
-          const ev = decodeEventLog({ abi: plenumFactoryAbi, data: log.data, topics: log.topics });
-          if (ev.eventName === "PlenumCreated") plenum = ev.args.plenum;
-        } catch {}
-      }
-      if (!plenum) throw new Error("Group created but its address was not found in the receipt.");
-
-      setStep("Adding you as the first member…");
-      const invite = await signInvite(session.account, plenum, session.account.address, 1);
-      await send(session.account, {
-        address: plenum,
-        abi: plenumAbi,
-        functionName: "join",
-        args: [encodeInvite(invite), publicKeyToBytes32(session.encryption.publicKey)],
-      });
-      router.push(`/g/${plenum}?created=1`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setStep(null);
-    }
+    let plenum: Address | undefined;
+    const ok = await tx.run([
+      {
+        label: `Write "${name.trim()}" and its rules to Monad`,
+        run: async (sent) => {
+          if (!MANAGER_ADDRESS) throw new Error("The AI manager's address is not configured (NEXT_PUBLIC_MANAGER_ADDRESS).");
+          const hash = await send(
+            session.account,
+            { address: DEPLOYMENT.factory, abi: plenumFactoryAbi, functionName: "createPlenum", args: [name.trim(), template.id, mandateConfig(template), MANAGER_ADDRESS] },
+            sent,
+          );
+          const receipt = await publicClient.getTransactionReceipt({ hash });
+          for (const log of receipt.logs) {
+            try {
+              const ev = decodeEventLog({ abi: plenumFactoryAbi, data: log.data, topics: log.topics });
+              if (ev.eventName === "PlenumCreated") plenum = ev.args.plenum;
+            } catch {}
+          }
+          if (!plenum) throw new Error("Group created but its address was not found in the receipt.");
+        },
+      },
+      {
+        label: "Add you as the first member",
+        run: async (sent) => {
+          const invite = await signInvite(session.account, plenum!, session.account.address, 1);
+          return send(session.account, { address: plenum!, abi: plenumAbi, functionName: "join", args: [encodeInvite(invite), publicKeyToBytes32(session.encryption.publicKey)] }, sent);
+        },
+      },
+    ]);
+    if (ok && plenum) router.push(`/g/${plenum}?created=1`);
   }
 
+  const clauses = [
+    { icon: Vault, text: `The manager may only buy and sell the ${template.sleeves.length} assets below. It can never send money anywhere else.` },
+    { icon: Scales, text: `Any single trade is limited to ${pct(template.maxTrade, 0)} of the group's value, and all trades in a day to 25%.` },
+    { icon: Coins, text: `At least ${pct(template.cashFloor, 0)} stays in cash so members can take money out.` },
+    { icon: Gavel, text: "Anything outside these limits becomes a proposal that members approve with their passkey." },
+    { icon: HandPalm, text: "Any 2 members can pause the manager instantly." },
+  ];
+
   return (
-    <div className="space-y-8 pt-10">
-      <div className="max-w-2xl">
-        <Eyebrow>New group</Eyebrow>
-        <H1>Choose your group's rules</H1>
-        <p className="mt-4 text-muted">
-          The rules decide what the AI manager may buy, how far each holding may drift from its target, how much cash
-          stays on hand, and how big a single trade can be. Anything outside them needs the members' approval.
-        </p>
+    <div className="pt-10">
+      <div className="flex items-center gap-3 font-mono text-xs text-muted">
+        <span className={step === 0 ? "text-accent" : ""}>Choose the rules</span>
+        <span className="h-px w-8 bg-line" />
+        <span className={step === 1 ? "text-accent" : ""}>Name and create</span>
       </div>
 
-      {verified === false ? (
-        <Notice tone="warn">
-          You need to be verified before you can create a group. <Link className="text-accent" href="/start">Check your status</Link>.
-        </Notice>
-      ) : null}
+      <AnimatePresence mode="wait">
+        {step === 0 ? (
+          <motion.div key="pick" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={reduce ? undefined : { opacity: 0, x: -12 }}>
+            <h1 className="mt-6 max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-5xl">Choose your group's rules.</h1>
+            <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
+              The rules decide what the AI manager may buy, how far each holding may drift, how much cash stays on hand and how big one trade can be. They're written into a contract the manager can't change.
+            </p>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {TEMPLATES.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTemplate(t)}
-            className={`rounded-2xl border p-5 text-left transition ${
-              template.id === t.id ? "border-accent bg-surface ring-2 ring-accent/30" : "border-line bg-surface hover:border-ink/30"
-            }`}
+            {verified === false ? (
+              <div className="mt-6 max-w-2xl">
+                <Notice tone="warn">
+                  You need to be verified before you can create a group.{" "}
+                  <Link className="text-accent underline-offset-4 hover:underline" href="/start">
+                    Check your status
+                  </Link>
+                  .
+                </Notice>
+              </div>
+            ) : null}
+
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {TEMPLATES.map((t) => {
+                const on = template.id === t.id;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTemplate(t)}
+                    aria-pressed={on}
+                    className={`relative rounded-[24px] border p-5 text-left transition active:scale-[0.99] ${on ? "border-accent/60" : "border-line hover:border-line-strong"}`}
+                  >
+                    {on ? <motion.span layoutId="tpl" className="absolute inset-0 rounded-[24px] bg-accent-soft" transition={{ type: "spring", stiffness: 380, damping: 34 }} /> : null}
+                    <span className="relative block">
+                      <span className="flex items-center justify-between">
+                        <span className="font-display text-2xl font-semibold tracking-[-0.02em]">{t.title}</span>
+                        <span className={`grid size-6 place-items-center rounded-full border ${on ? "border-accent bg-accent text-accent-ink" : "border-line-strong"}`}>{on ? <Check size={13} weight="bold" /> : null}</span>
+                      </span>
+                      <span className="mt-2 block text-sm text-muted">{t.blurb}</span>
+                      <span className="mx-auto mt-4 block max-w-[220px]">
+                        <ChamberDial rows={rowsFromTemplate(t)} labels={false} />
+                      </span>
+                      <span className="mt-2 block space-y-1.5 text-sm tabular">
+                        {t.sleeves.map((s) => (
+                          <span key={s.adapter} className="flex justify-between">
+                            <span>{adapterName(s.adapter)}</span>
+                            <span className="font-mono text-xs text-muted">
+                              {pct(s.target, 0)} ± {pct(s.band, 0)}
+                            </span>
+                          </span>
+                        ))}
+                        <span className="flex justify-between">
+                          <span>Cash</span>
+                          <span className="font-mono text-xs text-muted">at least {pct(t.cashFloor, 0)}</span>
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+              <p className="flex items-center gap-2 text-xs text-muted">
+                Assets are <MockTag /> testnet versions of tokenised funds.
+              </p>
+              <Button size="lg" onClick={() => setStep(1)}>
+                Continue with {template.title} <ArrowRight size={17} />
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="name"
+            className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_1fr]"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduce ? undefined : { opacity: 0, x: 12 }}
           >
-            <p className="font-display text-2xl">{t.title}</p>
-            <p className="mt-2 text-sm text-muted">{t.blurb}</p>
-            <ul className="mt-4 space-y-1 text-sm tabular">
-              {t.sleeves.map((s) => (
-                <li key={s.adapter} className="flex justify-between">
-                  <span>{adapterName(s.adapter)}</span>
-                  <span className="text-muted">
-                    {pct(s.target, 0)} ± {pct(s.band, 0)}
-                  </span>
-                </li>
-              ))}
-              <li className="flex justify-between">
-                <span>Cash</span>
-                <span className="text-muted">at least {pct(t.cashFloor, 0)}</span>
-              </li>
-            </ul>
-          </button>
-        ))}
-      </div>
-
-      <Card className="max-w-2xl space-y-4">
-        <h2 className="font-medium">In plain language</h2>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted">
-          <li>The manager may only buy and sell the {template.sleeves.length} assets above. It can never send money anywhere else.</li>
-          <li>Any single trade is limited to {pct(template.maxTrade, 0)} of the group's value, and all trades in a day to 25%.</li>
-          <li>At least {pct(template.cashFloor, 0)} stays in cash so members can take money out.</li>
-          <li>Anything outside these limits becomes a proposal that members approve with their passkey.</li>
-          <li>Any 2 members can pause the manager instantly.</li>
-          <li>The assets are <span className="text-mock">MOCK</span> testnet versions of tokenised funds.</li>
-        </ul>
-        <Field label="Group name">
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="São Paulo Investment Club" />
-        </Field>
-        <Button busy={!!step} disabled={!name.trim() || verified !== true} onClick={create}>
-          Create group
-        </Button>
-        {step ? <p className="text-sm text-muted">{step}</p> : null}
-        {error ? <Notice tone="bad">{error}</Notice> : null}
-      </Card>
+            <div>
+              <button onClick={() => setStep(0)} disabled={tx.busy} className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-ink">
+                <ArrowLeft size={14} /> Change rules
+              </button>
+              <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] sm:text-5xl">Read the rules, then name it.</h1>
+              <Card className="mt-8 space-y-5">
+                <p className="font-display text-xl font-semibold tracking-tight">{template.title}, in plain language</p>
+                <ul className="space-y-4">
+                  {clauses.map((c) => (
+                    <li key={c.text} className="flex gap-3 text-sm leading-relaxed">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-line bg-sunk text-accent">
+                        <c.icon size={16} />
+                      </span>
+                      <span className="pt-1">{c.text}</span>
+                    </li>
+                  ))}
+                  <li className="flex gap-3 text-sm leading-relaxed">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-bad/30 bg-bad/10 text-bad">
+                      <Prohibit size={16} />
+                    </span>
+                    <span className="pt-1">The manager can't change any of this. Only members can.</span>
+                  </li>
+                </ul>
+              </Card>
+            </div>
+            <div className="lg:pt-24">
+              <Card className="space-y-5">
+                <div className="mx-auto max-w-[260px]">
+                  <ChamberDial rows={rowsFromTemplate(template)} labels={false}>
+                    <p className="text-xs text-muted">{template.title}</p>
+                  </ChamberDial>
+                </div>
+                <Field label="Group name" hint="Members see this name. It's stored onchain, so keep personal details out of it.">
+                  <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="São Paulo Investment Club" disabled={tx.busy} />
+                </Field>
+                <Button size="lg" className="w-full" busy={tx.busy} disabled={!name.trim() || verified !== true || tx.busy} onClick={create}>
+                  Create group
+                </Button>
+                <TxSteps steps={tx.steps} error={tx.error} />
+              </Card>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

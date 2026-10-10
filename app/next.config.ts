@@ -6,6 +6,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const config: NextConfig = {
   transpilePackages: ["@plenum/abis", "@plenum/crypto"],
   reactStrictMode: true,
+  agentRules: false,
 };
 
 export default withNextIntl(config);

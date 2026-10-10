@@ -16,10 +16,12 @@ export const publicClient = createPublicClient({
 export async function send(
   account: LocalAccount,
   req: { address: Address; abi: Abi; functionName: string; args?: readonly unknown[] },
+  onSent?: (hash: Hash) => void,
 ): Promise<Hash> {
   const wallet = createWalletClient({ chain: CHAIN, transport: http(RPC_URL), account });
   const estimate = await publicClient.estimateContractGas({ ...req, account } as never);
   const hash = await wallet.writeContract({ ...req, account, chain: CHAIN, gas: (estimate * 12n) / 10n } as never);
+  onSent?.(hash);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error(`Transaction reverted: ${hash}`);
   return hash;

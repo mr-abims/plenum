@@ -15,6 +15,8 @@ export const DEPLOYMENT = deployment as unknown as {
   creditVault: Address;
   gold: Address;
   factory: Address;
+  /** Demo group used by the landing page for live reads (Rehearsal.s.sol). */
+  rehearsalPlenum?: Address;
 };
 
 export const CHAIN = DEPLOYMENT.chainId === monadTestnet.id ? monadTestnet : foundry;
