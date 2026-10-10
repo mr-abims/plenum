@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { verifyMessage, isAddress, type Address, type Hex } from "viem";
 import { z } from "zod";
 import { blobMessage } from "@/lib/blobProtocol";
-import { blobStore } from "@/lib/blobStore.server";
+import { blobStore, StorageNotConfigured } from "@/lib/blobStore.server";
 
 const MAX_BYTES = 256 * 1024;
 const MAX_SKEW_SECONDS = 300;
@@ -38,7 +38,7 @@ async function authorize(req: Request, id: string, method: "PUT" | "DELETE", bod
   }
 }
 
-export async function GET(_req: Request, { params }: Ctx) {
+async function getHandler(_req: Request, { params }: Ctx) {
   const { id } = await params;
   if (!ID.test(id)) return new NextResponse("bad id", { status: 400 });
   const body = await blobStore().get(id);
@@ -46,7 +46,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   return new NextResponse(body, { headers: { "content-type": "application/json", "x-plenum-store": blobStore().kind } });
 }
 
-export async function PUT(req: Request, { params }: Ctx) {
+async function putHandler(req: Request, { params }: Ctx) {
   const { id } = await params;
   if (!ID.test(id)) return new NextResponse("bad id", { status: 400 });
   const text = await req.text();
@@ -59,7 +59,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   return NextResponse.json({ ok: true, store: blobStore().kind });
 }
 
-export async function DELETE(req: Request, { params }: Ctx) {
+async function deleteHandler(req: Request, { params }: Ctx) {
   const { id } = await params;
   if (!ID.test(id)) return new NextResponse("bad id", { status: 400 });
   const problem = await authorize(req, id, "DELETE", "-");
@@ -67,3 +67,19 @@ export async function DELETE(req: Request, { params }: Ctx) {
   await blobStore().delete(id);
   return NextResponse.json({ ok: true });
 }
+
+/** Storage misconfiguration is reported as 503 rather than a generic 500. */
+function guarded(handler: (req: Request, ctx: Ctx) => Promise<Response>) {
+  return async (req: Request, ctx: Ctx) => {
+    try {
+      return await handler(req, ctx);
+    } catch (err) {
+      if (err instanceof StorageNotConfigured) return new NextResponse(err.message, { status: 503 });
+      throw err;
+    }
+  };
+}
+
+export const GET = guarded(getHandler);
+export const PUT = guarded(putHandler);
+export const DELETE = guarded(deleteHandler);

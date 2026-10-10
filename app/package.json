@@ -5,7 +5,7 @@
   "description": "Next.js member app (Mera passkey accounts)",
   "type": "module",
   "scripts": {
-    "deployment": "node scripts/deployment.mjs ${NEXT_PUBLIC_CHAIN_ID:-31337}",
+    "deployment": "node scripts/deployment.mjs ${NEXT_PUBLIC_CHAIN_ID:-10143}",
     "dev": "pnpm deployment && next dev",
     "build": "pnpm deployment && next build",
     "start": "next start",

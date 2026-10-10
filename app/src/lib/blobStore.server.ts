@@ -5,7 +5,7 @@ import { AwsClient } from "aws4fetch";
 
 /** Ciphertext-only blob storage. Cloudflare R2 when configured; otherwise a local folder (DEV FALLBACK). */
 export interface BlobStore {
-  readonly kind: "r2" | "local-dev-fallback";
+  readonly kind: "r2" | "local-dev-fallback" | "unconfigured";
   get(id: string): Promise<string | undefined>;
   put(id: string, body: string): Promise<void>;
   delete(id: string): Promise<void>;
@@ -66,6 +66,24 @@ class LocalStore implements BlobStore {
   }
 }
 
+/** On hosted deployments (Vercel) the filesystem is read-only and per-instance, so R2 is required. */
+export class StorageNotConfigured extends Error {}
+class UnconfiguredStore implements BlobStore {
+  readonly kind = "unconfigured" as const;
+  private fail(): never {
+    throw new StorageNotConfigured("data-room storage is not configured: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET");
+  }
+  async get(): Promise<string | undefined> {
+    this.fail();
+  }
+  async put(): Promise<void> {
+    this.fail();
+  }
+  async delete(): Promise<void> {
+    this.fail();
+  }
+}
+
 let store: BlobStore | undefined;
 export function blobStore(): BlobStore {
   if (store) return store;
@@ -73,6 +91,8 @@ export function blobStore(): BlobStore {
   store =
     R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET
       ? new R2Store(R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET)
-      : new LocalStore();
+      : process.env.VERCEL
+        ? new UnconfiguredStore()
+        : new LocalStore();
   return store;
 }
