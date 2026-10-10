@@ -18,6 +18,7 @@
     "@plenum/crypto": "workspace:*",
     "@scure/bip32": "2.4.0",
     "@scure/bip39": "2.4.0",
+    "@vercel/blob": "2.8.1",
     "aws4fetch": "1.0.20",
     "motion": "14.0.0",
     "next": "16.4.0",
