@@ -12,6 +12,7 @@ Contracts labelled MOCK are testnet stand-ins (identity, settlement asset, asset
 | ComplianceGate | [`0x37c4Ee488d4B8bD529D6D8a0dF2e74CbDAaf1E5B`](https://testnet.monadvision.com/address/0x37c4Ee488d4B8bD529D6D8a0dF2e74CbDAaf1E5B) |
 | ConsentRegistry | [`0xa86c0d0fC110827c0ac40728D60e2987f4d5B1f2`](https://testnet.monadvision.com/address/0xa86c0d0fC110827c0ac40728D60e2987f4d5B1f2) |
 | MockIdentityProvider (MOCK) | [`0x6a831Be9424d496a776BE88C9f3Cdf1F50718b0f`](https://testnet.monadvision.com/address/0x6a831Be9424d496a776BE88C9f3Cdf1F50718b0f) |
+| CleanverseAttestationRegistrar (only writer of identities; signer is the MOCK Cleanverse attester `0x77B3d364521B10aE6a6B91a6Dd1081Bf140EE0B5`) | [`0xD08819268ACf957F479cdDdBa3b47B008c6041cE`](https://testnet.monadvision.com/address/0xD08819268ACf957F479cdDdBa3b47B008c6041cE) |
 | MockAToken mvUSD (MOCK) | [`0x0f7bcF010d76Ca9f5159f9A66c82fBAaA9520D83`](https://testnet.monadvision.com/address/0x0f7bcF010d76Ca9f5159f9A66c82fBAaA9520D83) |
 | MockTBillVault (MOCK) | [`0x6b075Ea481D5aCd181103EaF0E8A7FD66C9cAF5C`](https://testnet.monadvision.com/address/0x6b075Ea481D5aCd181103EaF0E8A7FD66C9cAF5C) |
 | MockCreditVault (MOCK) | [`0x9a62126a6F6A44A6e59F7B8e18494Bf4972C661c`](https://testnet.monadvision.com/address/0x9a62126a6F6A44A6e59F7B8e18494Bf4972C661c) |
@@ -42,6 +43,7 @@ CRE forwarder configured on NavOracle: `0xB9F79d863261869B234c481D1f9A7af84AeAd1
 | Agent runtime refuses an oversized trade in-band (`TRADE_TOO_LARGE`) and escalates it to a proposal | [0x693cd26c…](https://testnet.monadvision.com/tx/0x693cd26ce14e04a3bb6eb2c1b9119ff536039641460bd69ee15ed11eaa011c91) |
 | Member approves proposal 2 | [0x28c7f1fd…](https://testnet.monadvision.com/tx/0x28c7f1fd423c9d303215f9a0e553e56ae42bd9f2fad8a5623a076911a113a615) |
 | Proposal 2 executed after quorum (re-checks allowlist and NAV freshness) | [0x5dc4255f…](https://testnet.monadvision.com/tx/0x5dc4255f9a1dc9a0f17681ba5bb86d01bad534e446d57546e9c3a7ce9b3a1447) |
+| A signed Cleanverse attestation (MOCK signer) verifies a new person: `checkMember` goes from `MEMBER_NOT_VERIFIED` to `OK`; the deployer can no longer set identities directly | [0xc9d9acad…](https://testnet.monadvision.com/tx/0xc9d9acad40b268366d2352b7457fef8e98e3f3013394372f38fd8a52c18251ba) |
 | Forced call with the manager key to move 4,000 to 0xABC… reverts `PolicyViolation(ADAPTER_NOT_ALLOWED)` | [0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
 
 ## Notes
