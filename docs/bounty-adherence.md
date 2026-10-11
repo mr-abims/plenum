@@ -143,8 +143,17 @@ account; separately, `HKDF-SHA256(PRF, "plenum", "plenum/x25519/v1")` gives an *
 **Requirement:** Mera as the entire account layer: no seed phrase, no extension, no custody backend.
 
 **How Plenum meets it:** every member account is a Mera passkey account (`createPasskeyWithPrfOutput` /
-`getPasskeyPrfOutput` → `toViemAccount`). No wallet connector, no seed phrase, no extension. Sensitive actions
-(approve, pause, consent) ask for the passkey again. The manager's operator key holds no user funds and can only call
+`getPasskeyPrfOutput` → `toViemAccount`). No wallet connector, no seed phrase, no extension.
+
+- **One-prompt onboarding:** one passkey ceremony creates the account; the app then sets it up with MOCK test dollars
+  and gas automatically (signed by the Mera signing session, no second prompt), so the first Monad transaction
+  (create a group or contribute) follows straight away.
+- **Session scope:** contribute, join and saving preferences sign prompt-free with the in-memory signing session;
+  approve, pause and consent ask for the passkey again. The session ends on reload, sign-out or 30 minutes without
+  activity, with a banner explaining why and a one-tap sign-in that returns to the same page.
+- **Stateless test:** nothing but a credential-id hint is stored on the device. On a fresh browser, signing in with
+  the same passkey rebuilds the account, decrypts the profile from the data room and lists the member's groups from
+  the Envio indexer. The manager's operator key holds no user funds and can only call
 `ManagerGateway`. The PRF output is never stored.
 
 **Evidence:**

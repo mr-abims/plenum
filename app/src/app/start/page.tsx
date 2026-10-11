@@ -12,6 +12,7 @@ import { money } from "@/lib/format";
 import { CURRENCIES, usdRates } from "@/lib/fx";
 import { USD } from "@/lib/plenum";
 import { useAccountSetup } from "@/lib/useAccountSetup";
+import { loadMyGroups, type MyGroup } from "@/lib/feed";
 import { useSession, type Profile } from "@/lib/session";
 
 const STEPS = [
@@ -56,6 +57,11 @@ function Start() {
   useEffect(() => setDraft(profile), [profile]);
   useEffect(() => void usdRates().then(setRates).catch(() => {}), []);
   const setup = useAccountSetup(session);
+  const [groups, setGroups] = useState<MyGroup[] | null>(null);
+  useEffect(() => {
+    if (!session) return setGroups(null);
+    loadMyGroups(session.account.address).then(setGroups).catch(() => setGroups([]));
+  }, [session]);
 
   const at = !session ? 0 : setup.ready ? 2 : 1;
 
@@ -177,6 +183,25 @@ function Start() {
         )}
         <p className="text-xs text-muted">Joining a friend's group? Open the invite link they sent you.</p>
       </Card>
+
+      {groups && groups.length > 0 ? (
+        <Card className="space-y-3">
+          <h2 className="font-display text-xl font-semibold tracking-tight">Your groups</h2>
+          <ul className="divide-y divide-line">
+            {groups.map((g) => (
+              <li key={g.address}>
+                <Link href={`/g/${g.address}`} className="flex items-center justify-between gap-3 py-3 transition hover:text-accent">
+                  <span className="font-medium">{g.name}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted">
+                    {g.memberCount} member{g.memberCount === 1 ? "" : "s"} <ArrowRight size={14} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted">Found from your account onchain, so this list is the same on any device.</p>
+        </Card>
+      ) : null}
 
       <Card className="space-y-5">
         <div>

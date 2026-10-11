@@ -132,3 +132,28 @@ export async function loadMembers(p: PlenumState): Promise<MemberRow[]> {
     })),
   );
 }
+
+export interface MyGroup {
+  address: Address;
+  name: string;
+  memberCount: number;
+}
+
+/**
+ * The groups an account belongs to, from the Envio indexer. Nothing about membership is stored on the device, so this
+ * list rebuilds from the passkey alone on any browser (the Mera stateless test).
+ */
+export async function loadMyGroups(member: Address): Promise<MyGroup[]> {
+  if (!INDEXER_URL) return [];
+  const query = `query Mine($m: String!) {
+    Member(where: {address: {_eq: $m}}) { plenum { id name memberCount } }
+  }`;
+  const res = await fetch(INDEXER_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query, variables: { m: member.toLowerCase() } }),
+  });
+  const body = (await res.json()) as { data?: { Member: { plenum: { id: Address; name: string; memberCount: number } }[] } };
+  if (!body.data) throw new Error("indexer unavailable");
+  return body.data.Member.map(({ plenum: p }) => ({ address: p.id, name: p.name, memberCount: p.memberCount }));
+}

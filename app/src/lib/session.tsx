@@ -35,6 +35,13 @@ interface SessionValue {
 
 const Ctx = createContext<SessionValue | null>(null);
 
+/**
+ * Session scope (Mera UX): while signed in, ordinary actions (contribute, join, save preferences) sign with the
+ * in-memory Mera signing session without a prompt; approve, pause and consent ask for the passkey again. The signing
+ * key lives only in memory: it ends on reload, on sign-out, or after this much inactivity.
+ */
+export const IDLE_LIMIT_MS = 30 * 60 * 1000;
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<MemberSession | null>(null);
   const [profile, setProfile] = useState<Profile>(defaultProfile);
@@ -45,6 +52,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void usdRates().then((r) => setRate(r[profile.currency] ?? 1));
   }, [profile.currency]);
+
+  // End the signing session after IDLE_LIMIT_MS without user activity, and say why.
+  useEffect(() => {
+    if (!session) return;
+    let timer = setTimeout(expire, IDLE_LIMIT_MS);
+    function expire() {
+      session?.end();
+      setSession(null);
+      setProfile(defaultProfile());
+      setError("Your session ended after 30 minutes without activity. Sign in with your passkey to continue.");
+    }
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(expire, IDLE_LIMIT_MS);
+    };
+    const events = ["pointerdown", "keydown", "visibilitychange"] as const;
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [session]);
 
   const loadProfile = useCallback(async (s: MemberSession) => {
     try {

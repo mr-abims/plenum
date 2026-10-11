@@ -14,7 +14,8 @@ import { Seal } from "./Seal";
 
 export function Header() {
   const t = useTranslations("common");
-  const { session, profile, logout } = useSession();
+  const { session, profile, logout, error } = useSession();
+  const expired = !session && !!error?.startsWith("Your session ended");
   const path = usePathname();
   const landing = path === "/";
   return (
@@ -53,6 +54,14 @@ export function Header() {
           )}
         </div>
       </div>
+      {expired && path !== "/start" ? (
+        <div className="border-t border-line bg-warn/10 px-4 py-2 text-center text-sm" role="status">
+          {error}{" "}
+          <Link href={`/start?next=${encodeURIComponent(path)}`} className="font-medium text-accent underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </div>
+      ) : null}
     </header>
   );
 }
