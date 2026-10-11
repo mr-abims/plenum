@@ -11,7 +11,6 @@ Status key: ✅ shown with evidence · 🟡 built, evidence pending · ⏳ video
 | Track 04 main prize | Primitives for trust, provenance and user-owned data that make AI useful without one platform capturing the value | ✅ |
 | Chainlink CRE | Build, simulate or deploy a CRE workflow used as an orchestration layer | ✅ |
 | Envio | HyperIndex / HyperSync powering real onchain data in a core feature | ✅ |
-| Cleanverse | Gate CVA asset movement behind onchain CVI identity verification | ✅ (MOCK signer) |
 | Mera: One Passkey, Many Keys | Most creative non-wallet use of Mera's PRF-derived key material | 🟡 |
 | Best Mera-Powered UX | Mera as the entire account layer: no seed phrase, no extension, no custody backend | 🟡 |
 | Qwen 3.8 Max | Push Qwen 3.8 Max into genuinely agentic territory on Monad | 🟡 |
@@ -23,14 +22,16 @@ Status key: ✅ shown with evidence · 🟡 built, evidence pending · ⏳ video
 **Requirement:** primitives for trust, provenance and user-owned data that make AI useful without one platform
 capturing the value.
 
-**How Plenum meets it:** an AI manages a group's money, but every duty the AI could abuse is held by someone else and
-enforced onchain:
+**How Plenum meets it:** Plenum is the **mandate layer for AI money managers**: any app that lets an AI agent manage
+money for people can put the agent behind a member-written mandate instead of handing it a key
+([`docs/INTEGRATE.md`](INTEGRATE.md), [`packages/sdk`](../packages/sdk)). The group app is the reference client. Every
+duty the AI could abuse is held by someone else and enforced onchain:
 
 | Duty | Held by | Enforced by |
 | --- | --- | --- |
 | Manage | AI manager (scoped operator key) | `ManagerGateway` + `Mandate.check` on every action |
 | Price | Chainlink CRE workflow | `NavOracle` accepts the CRE forwarder only |
-| Police | Cleanverse attestations | `CleanverseAttestationRegistrar` → `ComplianceGate` |
+| Admit | Members, by signed invite | `Plenum.join` (EIP-712 invite: member-signed, single-use, expiring, capped) |
 | Own and decide | Members (Mera passkeys) | `Governance`: approve, pause, (roadmap) replace |
 
 - **Trust:** the worst a fully compromised manager can do is move money between assets the group approved, within
@@ -44,7 +45,7 @@ enforced onchain:
 - **Agent identity and reputation (ERC-8004):** the manager is agent #2128 in Monad testnet's canonical
   IdentityRegistry, and every memo names that identity. Members rate its actions in the canonical
   ReputationRegistry, each rating pointing at the action's rationale hash. The app counts only ratings from the
-  group's own Cleanverse-verified members, so outsiders can't game the score.
+  group's own members (each admitted by a member's invite), so outsiders can't game the score.
 - **No platform capture:** members can pause the manager instantly; the manager is a replaceable key behind a
   gateway, and the data stays with the members.
 
@@ -52,10 +53,10 @@ enforced onchain:
 
 | What | Where |
 | --- | --- |
-| A forced call with the manager's own key, moving 4,000 to an outside address, **reverts** `ADAPTER_NOT_ALLOWED` | [tx 0x42254307…](https://testnet.monadvision.com/tx/0x42254307eb4048176a04c67bf922b97168c8dfdd05775cdc5d1455758dbc3c3f) |
-| Oversized trade refused in-band, escalated, approved by a member, executed | [escalate](https://testnet.monadvision.com/tx/0x693cd26ce14e04a3bb6eb2c1b9119ff536039641460bd69ee15ed11eaa011c91) · [approve](https://testnet.monadvision.com/tx/0x28c7f1fd423c9d303215f9a0e553e56ae42bd9f2fad8a5623a076911a113a615) · [execute](https://testnet.monadvision.com/tx/0x5dc4255f9a1dc9a0f17681ba5bb86d01bad534e446d57546e9c3a7ce9b3a1447) |
+| A forced call with the manager's own key, moving 4,000 to an outside address, **reverts** `ADAPTER_NOT_ALLOWED` | [tx 0x732ef7c0…](https://testnet.monadvision.com/tx/0x732ef7c035971c5c249132b444ba05403c84f6c0f0a3d36915ad5ffb7ceec97d) |
+| Oversized trade refused in-band, escalated, approved by a member, executed | [escalate](https://testnet.monadvision.com/tx/0x7026de791cb4f2da09ba21dc1f051ffefda3b9e914683d8c3221bf40d651722a) · [approve](https://testnet.monadvision.com/tx/0xeeb42e59597e335fc5510de7c454bfab08c742205a7f369a884ce6e178877961) · [execute](https://testnet.monadvision.com/tx/0x1e249b939612de9df9ba8019df7033fbe0427314c044863b4de2df24a9f7ce91) |
 | Try it: the landing page's rule console asks the Showcase Club's `ManagerGateway.simulate` live; `/verify` checks any manager action and memo against the chain | https://plenumx.vercel.app, https://plenumx.vercel.app/verify |
-| ERC-8004: manager registered as agent #2128; a member's rating, summarised over members only | [register 0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) · [feedback 0xf69991fb…](https://testnet.monadvision.com/tx/0xf69991fb4ffd4df27da9d90a7b469740dbc16141b15f2f44adcc0b0805a46113) |
+| ERC-8004: manager registered as agent #2128; a member's rating, summarised over members only | [register 0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) · [feedback 0x29cffa75…](https://testnet.monadvision.com/tx/0x29cffa7500ed38f7c9d421c35d28262853f695b278dfb0923f84b1b814ba97ac) |
 | Invariant and red-team results | [`docs/threat-model.md`](threat-model.md), `contracts/test/invariant/`, `agent/redteam/` |
 | Video | ⏳ |
 
@@ -65,10 +66,18 @@ enforced onchain:
 
 **Requirement:** build, simulate or deploy a CRE workflow used as an orchestration layer.
 
-**How Plenum meets it:** the CRE workflow is the fund's **independent administrator**. On a cron (and an HTTP
-trigger) it reads every holding of each plenum at the last finalized block, computes NAV and per-sleeve drift, and
-writes a report through the forwarder to `NavOracle`. The AI manager never writes the price, and it cannot act on a
-price older than the mandate allows (`NAV_STALE`).
+**How Plenum meets it:** the CRE workflow is the fund's **independent administrator** and connects Monad to
+real-world market data. On a cron (and an HTTP trigger) it:
+
+1. fetches the **gold spot price from an external API** (gold-api.com) on every node and agrees on the median
+   (`consensusMedianAggregation`);
+2. reports that price through the forwarder to the gold adapter (`MockGold`), which rejects stale, future-dated
+   and >20% moves, so the gold sleeve is valued at market;
+3. reads every holding of each plenum at the last finalized block, computes NAV and per-sleeve drift, and writes
+   a report through the forwarder to `NavOracle`.
+
+The AI manager never writes a price, and it cannot act on a price older than the mandate allows (`NAV_STALE`).
+Because gold is valued at the real price, real market moves create drift the manager then has to handle.
 
 **Evidence:**
 
@@ -76,7 +85,8 @@ price older than the mandate allows (`NAV_STALE`).
 | --- | --- |
 | Workflow code (TypeScript SDK 1.23, `monad-testnet` selector) | [`cre/plenum-nav/main.ts`](../cre/plenum-nav/main.ts), NAV math tested in [`cre/test/nav.test.ts`](../cre/test/nav.test.ts) |
 | Compiles to WASM with the CRE compiler; simulated with the CRE CLI v1.38 | [`cre/README.md`](../cre/README.md) |
-| `cre workflow simulate --broadcast` wrote `NavReported(…, CRE)` onchain | [tx 0x3c0dcc7b…](https://testnet.monadvision.com/tx/0x3c0dcc7b2cd7b6ab02bade2bead41905440831511db57345ae32d6551f8e2ff8) |
+| `cre workflow simulate --broadcast`: gold spot price fetched from an external API (median across nodes) and reported to `MockGold` | [tx 0x9136ba2d…](https://testnet.monadvision.com/tx/0x9136ba2db32ff7cbfcc9df6bcf360f696594f2bc4becdb8fd8bebb80fc07cb66) |
+| Same run: holdings read at the finalized block, gold valued at market, `NavReported(…, CRE)` written | [tx 0xfc925a89…](https://testnet.monadvision.com/tx/0xfc925a89ea1abc2c85317633289a867dceba2bdcb99356a94d0a3b10b9f50f98) |
 | Receiver accepts the forwarder only; timestamps strictly increase; no future reports | [`contracts/src/core/NavOracle.sol`](../contracts/src/core/NavOracle.sol), `NavOracle.t.sol` |
 | Video | ⏳ |
 
@@ -102,34 +112,6 @@ refusals), the approvals history and the activity timeline in the live app.
 
 ---
 
-## Cleanverse
-
-**Requirement:** gate CVA asset movement behind onchain CVI identity verification.
-
-**How Plenum meets it:** identities change **only** through EIP-712 attestations signed by the registered Cleanverse
-signer (`CleanverseAttestationRegistrar`, the identity store's only writer). Every movement of the settlement asset
-is gated:
-
-- Joining, contributing and redeeming go through `ComplianceGate` (`MEMBER_NOT_VERIFIED`, `PAYEE_NOT_VERIFIED`);
-  refusals are logged onchain (`ComplianceRefused`).
-- The A-Token itself only moves between verified identities or registered contracts.
-- Attestations are single-use, monotonic per person and expiring; anyone can `expire` a lapsed one, after which money
-  stops moving for that person.
-
-**MOCK:** the signer is a labelled MOCK attester key and the A-Token is a MOCK, because no public Cleanverse contracts
-or signer were available. Swapping in Cleanverse's signer is one `setSigner` call; no other change.
-
-**Evidence:**
-
-| What | Where |
-| --- | --- |
-| Registrar (source-verified) | [`0xD088…41cE`](https://testnet.monadvision.com/address/0xD08819268ACf957F479cdDdBa3b47B008c6041cE), [`contracts/src/compliance/CleanverseAttestationRegistrar.sol`](../contracts/src/compliance/CleanverseAttestationRegistrar.sol) |
-| A signed attestation verifies a new person (`MEMBER_NOT_VERIFIED` → `OK`) | [tx 0xc9d9acad…](https://testnet.monadvision.com/tx/0xc9d9acad40b268366d2352b7457fef8e98e3f3013394372f38fd8a52c18251ba) |
-| Expiry stops asset movement; forged, tampered, replayed and stale attestations rejected | `CleanverseAttestationRegistrar.t.sol` (11 tests) |
-| Unverified contribution refused onchain | 🟡 to record in the demo |
-| Video | ⏳ |
-
----
 
 ## Mera: One Passkey, Many Keys
 

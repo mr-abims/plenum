@@ -73,16 +73,18 @@ console.log(
 );
 
 step("2. In-band rebalance");
-const inband = plan([{ adapter: dep.tbillVault, op: "Deposit", assets: 200n * USD }]);
+// Trim the overweight gold sleeve: in band, or at least no worse for every holding (SPEC A18).
+const inband = plan([{ adapter: dep.gold, op: "Withdraw", assets: 500n * USD }]);
 const m1 = new ScriptedModel([call("get_portfolio", {}), call("simulate", { actions: inband.actions }), call("execute_in_band", { plan: inband })]);
 const r1 = await runOnce(await ctxFor(m1));
 ok(r1.status === "executed", `in-band executed (${r1.status}${"reason" in r1 ? ` ${r1.reason}` : ""})`);
 if ("txHash" in r1) console.log(EXPLORER + r1.txHash);
 
 step("3. Oversized trade → escalation");
+// 15% of the fund in one move: above the 10% single-trade cap, so it must go to the members.
 const big = plan([
-  { adapter: dep.tbillVault, op: "Withdraw", assets: 1_500n * USD },
-  { adapter: dep.gold, op: "Deposit", assets: 1_500n * USD },
+  { adapter: dep.gold, op: "Withdraw", assets: 1_500n * USD },
+  { adapter: dep.tbillVault, op: "Deposit", assets: 1_500n * USD },
 ]);
 const m2 = new ScriptedModel([call("execute_in_band", { plan: big }), call("escalate", { plan: big })]);
 const r2 = await runOnce(await ctxFor(m2));

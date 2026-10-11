@@ -1,10 +1,12 @@
 {
   "schedule": "0 */1 * * * *",
   "chainSelectorName": "monad-testnet",
-  "navOracle": "0xC45Fa55564BF4B53729c139D4613BfA295f3ad4a",
+  "navOracle": "0x925ce04252f13c24544009294E0C296D7C357cf4",
+  "gold": "0x688AFfb0CdF16146BadAFfffC2431F28b9E45E85",
+  "goldPriceUrl": "https://api.gold-api.com/price/XAU",
   "plenums": [
-    "0x856c63bBD03F051fCf7291fA1ae578b146153f24",
-    "0xB064930973b05060CD0972b66847eCD27171aea4"
+    "0x92b7F27235622418B254C9B50b6B90aB330936BC",
+    "0xE66A3b31097c733499029AaAcb84F23231B0aaDb"
   ],
   "gasLimit": "300000"
 }
