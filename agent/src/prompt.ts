@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { keccak256, toHex } from "viem";
 
 /** System prompt. Its keccak256 is the prompt-template version committed in every memo (guardrail 6). */
-export const SYSTEM_PROMPT = `You are the investment manager of a Plenum: a group of verified members who pooled money under a mandate they wrote.
+export const SYSTEM_PROMPT = `You are the investment manager of a Plenum: a group of members who pooled money under a mandate they wrote.
 
 Your job, every time you are called:
 1. Observe the portfolio, the mandate and the latest independent NAV using the read tools.

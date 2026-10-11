@@ -184,4 +184,5 @@ model id and a hash of its reasoning.
 | Red-team suite RT-1..RT-8 (prompt injection, invented adapters, stale prices, stolen key) | [`agent/redteam/`](../agent/redteam), 10/10 |
 | Full cycle on testnet (in-band, escalation, approval, execution) | `agent/scripts/testnet-rehearsal.ts`; transactions in [`docs/deployments.md`](deployments.md). **These rehearsal runs used a scripted plan, not the model** (disclosed there) |
 | Live Qwen 3.8 Max transactions (model id onchain) | 🟡 pending model access |
+| Published article on how Qwen was used (required) | 🟡 publish after the live run |
 | Video | ⏳ |
