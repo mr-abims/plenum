@@ -55,6 +55,9 @@ importers:
       '@plenum/crypto':
         specifier: workspace:*
         version: link:../packages/crypto
+      '@plenum/sdk':
+        specifier: workspace:*
+        version: link:../packages/sdk
       '@scure/bip32':
         specifier: 2.4.0
         version: 2.4.0
@@ -162,6 +165,28 @@ importers:
       '@noble/hashes':
         specifier: 2.4.0
         version: 2.4.0
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.4
+        version: 26.6.4
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: 5.0.3
+        version: 5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
+  packages/sdk:
+    dependencies:
+      '@plenum/abis':
+        specifier: workspace:*
+        version: link:../abis
+      '@plenum/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      viem:
+        specifier: 2.57.3
+        version: 2.57.3(typescript@7.0.2)(zod@4.6.5)
     devDependencies:
       '@types/node':
         specifier: 26.6.4

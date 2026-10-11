@@ -3,111 +3,25 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, MagnifyingGlass, SealCheck, SealWarning, XCircle } from "@phosphor-icons/react";
-import { canonicalJson } from "@plenum/crypto";
-import { managerGatewayAbi, plenumAbi, plenumFactoryAbi, REASONS } from "@plenum/abis";
-import { decodeEventLog, encodeAbiParameters, keccak256, toHex, type Address as Addr, type Hash } from "viem";
+import { checkMemo, verifyAction, type VerifiedAction } from "@plenum/sdk";
+import type { Hash } from "viem";
 import { Address } from "@/components/Address";
 import { MemoView } from "@/components/MemoView";
 import { ReasonChip } from "@/components/ReasonChip";
 import { Button, Card, Field, Notice, PageHeader, TxLink, inputClass } from "@/components/ui";
 import { publicClient } from "@/lib/chain";
 import { DEPLOYMENT } from "@/lib/config";
-import { modelName } from "@/lib/feedText";
 
-const OPS = ["Deposit", "Withdraw", "RequestRedeem", "Claim"] as const;
-const ACTIONS_TYPE = [
-  {
-    type: "tuple[]",
-    components: [
-      { name: "adapter", type: "address" },
-      { name: "op", type: "uint8" },
-      { name: "assets", type: "uint256" },
-    ],
-  },
-] as const;
-
-interface Found {
-  gateway: Addr;
-  plenum: Addr;
-  groupName: string;
-  manager: Addr;
-  actionsHash: Hash;
-  rationaleHash: Hash;
-  modelId: Hash;
-  reason: string;
-  block: bigint;
-  timestamp: number;
-  /** The emitter is a ManagerGateway clone made by the Plenum factory, and its group points back at it. */
-  genuine: { factoryClone: boolean; linked: boolean };
-}
-
-/** EIP-1167 minimal proxy runtime code: the implementation address sits at bytes 10..30. */
-const cloneOf = (code: string | undefined) =>
-  code && /^0x363d3d373d3d3d363d73[0-9a-f]{40}5af43d82803e903d91602b57fd5bf3$/i.test(code) ? (`0x${code.slice(22, 62)}` as Addr) : undefined;
-
-async function inspect(hash: Hash): Promise<Found> {
-  const receipt = await publicClient.getTransactionReceipt({ hash });
-  for (const log of receipt.logs) {
-    let ev;
-    try {
-      ev = decodeEventLog({ abi: managerGatewayAbi, data: log.data, topics: log.topics });
-    } catch {
-      continue;
-    }
-    if (ev.eventName !== "ManagerAction") continue;
-    const a = ev.args as { actionsHash: Hash; rationaleHash: Hash; modelId: Hash; reason: number };
-    const gateway = log.address;
-    const read = <T,>(address: Addr, abi: readonly unknown[], functionName: string) =>
-      publicClient.readContract({ address, abi, functionName } as never) as Promise<T>;
-    const [plenum, manager, code, impl, block] = await Promise.all([
-      read<Addr>(gateway, managerGatewayAbi, "plenum"),
-      read<Addr>(gateway, managerGatewayAbi, "manager"),
-      publicClient.getCode({ address: gateway }),
-      read<Addr>(DEPLOYMENT.factory, plenumFactoryAbi, "gatewayImpl"),
-      publicClient.getBlock({ blockNumber: receipt.blockNumber }),
-    ]);
-    const [groupName, backLink] = await Promise.all([read<string>(plenum, plenumAbi, "name"), read<Addr>(plenum, plenumAbi, "gateway")]);
-    return {
-      gateway,
-      plenum,
-      groupName,
-      manager,
-      ...a,
-      reason: REASONS[a.reason] ?? String(a.reason),
-      block: receipt.blockNumber,
-      timestamp: Number(block.timestamp),
-      genuine: {
-        factoryClone: cloneOf(code)?.toLowerCase() === impl.toLowerCase(),
-        linked: backLink.toLowerCase() === gateway.toLowerCase(),
-      },
-    };
-  }
-  throw new Error("This transaction has no ManagerAction event. Paste the hash of a manager action or escalation.");
-}
-
+type Found = VerifiedAction;
 type MemoCheck = { memo: boolean; actions: boolean | null } | { error: string };
 
-/** Hashes a pasted memo the way the manager does (canonical JSON, keccak256) and its actions the way the gateway does. */
-function checkMemo(text: string, f: Found): MemoCheck {
-  let memo: { actions?: { adapter: string; op: string; assets: string }[] };
+function checkPasted(text: string, f: Found): MemoCheck {
   try {
-    memo = JSON.parse(text);
+    const r = checkMemo(JSON.parse(text), f);
+    return { memo: r.reasoning, actions: r.actions };
   } catch {
     return { error: "That isn't valid JSON." };
   }
-  const memoOk = keccak256(toHex(canonicalJson(memo))) === f.rationaleHash;
-  let actionsOk: boolean | null = null;
-  try {
-    if (memo.actions) {
-      const encoded = encodeAbiParameters(ACTIONS_TYPE, [
-        memo.actions.map((x) => ({ adapter: x.adapter as Addr, op: OPS.indexOf(x.op as (typeof OPS)[number]), assets: BigInt(x.assets) })),
-      ]);
-      actionsOk = keccak256(encoded) === f.actionsHash;
-    }
-  } catch {
-    actionsOk = false;
-  }
-  return { memo: memoOk, actions: actionsOk };
 }
 
 function Verifier() {
@@ -125,7 +39,7 @@ function Verifier() {
     setError(null);
     setFound(null);
     try {
-      setFound(await inspect(hash as Hash));
+      setFound(await verifyAction(publicClient as never, DEPLOYMENT.factory, hash as Hash));
     } catch (e) {
       setError(e instanceof Error ? e.message.split("\n")[0]! : String(e));
     } finally {
@@ -138,7 +52,7 @@ function Verifier() {
     if (tx) void run(tx);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const memoCheck = found && memoText.trim() ? checkMemo(memoText, found) : null;
+  const memoCheck = found && memoText.trim() ? checkPasted(memoText, found) : null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 pt-10">
@@ -184,11 +98,11 @@ function Verifier() {
               <ReasonChip reason={found.reason} />
             </div>
             <ul className="space-y-2 text-sm">
-              <Check ok={found.genuine.factoryClone}>Sent by a ManagerGateway made by the Plenum factory (its bytecode points at the factory's implementation)</Check>
-              <Check ok={found.genuine.linked}>That group names this gateway as its manager gateway</Check>
+              <Check ok={found.factoryClone}>Sent by a ManagerGateway made by the Plenum factory (its bytecode points at the factory's implementation)</Check>
+              <Check ok={found.linked}>That group names this gateway as its manager gateway</Check>
             </ul>
             <dl className="grid gap-x-6 gap-y-3 border-t border-line pt-4 text-sm sm:grid-cols-2">
-              <Row label="Model">{modelName(found.modelId)}</Row>
+              <Row label="Model">{found.modelId}</Row>
               <Row label="When">
                 {new Date(found.timestamp * 1000).toUTCString()} · block {found.block.toString()}
               </Row>

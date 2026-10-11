@@ -16,6 +16,7 @@
     "@phosphor-icons/react": "2.1.10",
     "@plenum/abis": "workspace:*",
     "@plenum/crypto": "workspace:*",
+    "@plenum/sdk": "workspace:*",
     "@scure/bip32": "2.4.0",
     "@scure/bip39": "2.4.0",
     "@vercel/blob": "2.8.1",

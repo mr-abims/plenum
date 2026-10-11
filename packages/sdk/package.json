@@ -1,0 +1,25 @@
+{
+  "name": "@plenum/sdk",
+  "private": true,
+  "license": "MIT",
+  "description": "Put an AI agent behind a member-written mandate: simulate, act, escalate and verify Plenum manager actions",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@plenum/abis": "workspace:*",
+    "@plenum/crypto": "workspace:*",
+    "viem": "2.57.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}
