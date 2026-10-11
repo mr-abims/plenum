@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { OPS } from "@plenum/abis";
 
-/** One action as the model must express it. Assets are A-Token base units (6 decimals) as a decimal string. */
+/** One action as the model must express it. Assets are settlement-asset base units (6 decimals, MOCK test dollars) as a decimal string. */
 export const ActionSchema = z
   .object({
     adapter: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "adapter must be a 20-byte hex address"),

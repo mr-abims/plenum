@@ -11,14 +11,12 @@ import {ManagerGateway} from "../../src/core/ManagerGateway.sol";
 import {NavOracle} from "../../src/core/NavOracle.sol";
 import {ConsentRegistry} from "../../src/core/ConsentRegistry.sol";
 import {PlenumFactory} from "../../src/core/PlenumFactory.sol";
-import {ComplianceGate} from "../../src/compliance/ComplianceGate.sol";
-import {MockIdentityProvider} from "../../src/compliance/MockIdentityProvider.sol";
-import {MockAToken} from "../../src/mocks/MockAToken.sol";
+import {MockUSD} from "../../src/mocks/MockUSD.sol";
 import {MockTBillVault} from "../../src/adapters/MockTBillVault.sol";
 import {MockCreditVault} from "../../src/adapters/MockCreditVault.sol";
 import {MockGold} from "../../src/adapters/MockGold.sol";
 
-/// @notice Shared deployment: MOCK identity + A-Token, shared singletons, three MOCK adapters, a factory,
+/// @notice Shared deployment: MOCK test dollar, shared singletons, three MOCK adapters, a factory,
 ///         and one Balanced plenum organised by Ana.
 abstract contract Fixture is Test {
     address constant MOCK_FORWARDER = 0xB9F79d863261869B234c481D1f9A7af84AeAd192;
@@ -33,12 +31,10 @@ abstract contract Fixture is Test {
     address ana;
     address jonas;
     address wei_;
-    address stranger = makeAddr("stranger"); // never verified
+    address stranger = makeAddr("stranger"); // never invited
 
-    MockIdentityProvider identity;
-    MockAToken aToken;
+    MockUSD usd;
     NavOracle oracle;
-    ComplianceGate gate;
     ConsentRegistry consent;
     PlenumFactory factory;
     MockTBillVault tbill;
@@ -56,38 +52,25 @@ abstract contract Fixture is Test {
         jonas = vm.addr(jonasPk);
         wei_ = vm.addr(weiPk);
 
-        identity = new MockIdentityProvider();
-        aToken = new MockAToken(identity);
+        usd = new MockUSD();
         oracle = new NavOracle(MOCK_FORWARDER, fallbackWriter);
-        gate = new ComplianceGate(identity);
         consent = new ConsentRegistry();
-        tbill = new MockTBillVault(aToken);
-        credit = new MockCreditVault(address(aToken), 1 hours);
-        gold = new MockGold(address(aToken), 2_400 * USD);
+        tbill = new MockTBillVault(usd);
+        credit = new MockCreditVault(address(usd), 1 hours);
+        gold = new MockGold(address(usd), 2_400 * USD, MOCK_FORWARDER);
         factory = new PlenumFactory(
             PlenumFactory.Deps({
                 plenumImpl: address(new Plenum()),
                 mandateImpl: address(new Mandate()),
                 governanceImpl: address(new Governance()),
                 gatewayImpl: address(new ManagerGateway()),
-                aToken: address(aToken),
+                asset: address(usd),
                 navOracle: address(oracle),
-                complianceGate: address(gate),
                 consentRegistry: address(consent)
             })
         );
 
-        aToken.grantRole(aToken.REGISTER_ROLE(), address(this));
-        aToken.grantRole(aToken.REGISTER_ROLE(), address(factory));
-        aToken.grantRole(aToken.MINTER_ROLE(), address(this));
-        aToken.registerApass(address(tbill));
-        aToken.registerApass(address(credit));
-        aToken.registerApass(address(gold));
-
-        _verify(ana);
-        _verify(jonas);
-        _verify(wei_);
-        _verify(address(this)); // test contract funds MOCK yield
+        usd.grantRole(usd.MINTER_ROLE(), address(this));
 
         vm.prank(ana);
         plenum = Plenum(factory.createPlenum("Club", 1, balanced(), manager));
@@ -98,14 +81,10 @@ abstract contract Fixture is Test {
 
     // ---------------------------------------------------------------- helpers
 
-    function _verify(address who) internal {
-        identity.setIdentity(who, true, 1, bytes2("BR"));
-    }
-
     function _fund(address who, uint256 amount) internal {
-        aToken.mint(who, amount);
+        usd.mint(who, amount);
         vm.prank(who);
-        aToken.approve(address(plenum), type(uint256).max);
+        usd.approve(address(plenum), type(uint256).max);
     }
 
     function _invite(uint256 signerPk, address invitee, uint256 nonce, uint64 expiry)

@@ -7,7 +7,7 @@ Implements SPEC §11 (plus amendment A3). Envio HyperIndex v3 on Monad testnet (
   (`pnpm --filter @plenum/indexer config 10143` after the testnet deploy; `31337` for a local anvil chain).
 - Per-group clones (Plenum, ManagerGateway, Governance) are registered dynamically from `PlenumCreated`;
   `ContractLink` maps each gateway/governance clone back to its plenum.
-- Entities (`schema.graphql`): Plenum, Member, ManagerAction, Proposal, Approval, ComplianceRefusal, NavReport,
+- Entities (`schema.graphql`): Plenum, Member, ManagerAction, Proposal, Approval, NavReport,
   ConsentGrant, and an Activity feed row for every member-facing event (RP-1).
 - Handlers: `src/handlers/plenum.ts`. ABIs come from `@plenum/abis` (generated from the Foundry build).
 

@@ -71,8 +71,8 @@ contract MandateTest is Fixture {
 
     function _driftCredit() internal {
         _execute(_one(address(tbill), Op.Withdraw, 500 * USD)); // T-bill 40%, cash 25%
-        aToken.mint(address(this), 600 * USD);
-        aToken.approve(address(credit), 600 * USD);
+        usd.mint(address(this), 600 * USD);
+        usd.approve(address(credit), 600 * USD);
         credit.accrue(address(plenum), 600 * USD); // credit 2,600 / 10,600 = 24.5% (band 17-23), cash 23.6%
     }
 
@@ -105,8 +105,8 @@ contract MandateTest is Fixture {
 
     function test_noWorse_cannotOvershootPastTheOtherBand() public {
         _execute(_one(address(tbill), Op.Deposit, 500 * USD)); // T-bill 50% (edge), cash 15%
-        aToken.mint(address(this), 200 * USD);
-        aToken.approve(address(tbill), 200 * USD);
+        usd.mint(address(this), 200 * USD);
+        usd.approve(address(tbill), 200 * USD);
         tbill.accrue(200 * USD); // T-bill 5,200 / 10,200 = 51.0% (above band), cash 14.7%
         _postNav(10_200 * USD);
         // Withdraw 1,000 is within the size cap (10% of 10,200) and lands T-bill at 41.2%: in band, allowed.
@@ -117,8 +117,8 @@ contract MandateTest is Fixture {
     }
 
     function test_noWorse_floorMayNotFallFurther() public {
-        aToken.mint(address(this), 600 * USD);
-        aToken.approve(address(credit), 600 * USD);
+        usd.mint(address(this), 600 * USD);
+        usd.approve(address(credit), 600 * USD);
         credit.accrue(address(plenum), 600 * USD); // cash 2,000 / 10,600 = 18.9% (below floor)
         assertEq(uint8(mandate.check(new Action[](0))), uint8(Reason.OK));
         assertEq(uint8(mandate.check(_one(address(gold), Op.Deposit, 10 * USD))), uint8(Reason.LIQUIDITY_FLOOR));
@@ -166,6 +166,6 @@ contract MandateTest is Fixture {
         assertEq(uint8(Reason.WEIGHT_OUT_OF_BAND), 2);
         assertEq(uint8(Reason.NAV_STALE), 6);
         assertEq(uint8(Reason.PAUSED), 8);
-        assertEq(uint8(Reason.MEMBER_CAP), 12);
+        assertEq(uint8(Reason.MEMBER_CAP), 9);
     }
 }

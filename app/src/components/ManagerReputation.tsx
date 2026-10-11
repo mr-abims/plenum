@@ -24,7 +24,7 @@ export interface Summary {
 
 /**
  * The manager's ERC-8004 reputation as seen by this group: getSummary counts only feedback from the group's own
- * members, who are Cleanverse-verified and have money in the group, so outside accounts can't inflate or sink it.
+ * members, who were each invited by a member and have money in the group, so outside accounts can't inflate or sink it.
  */
 export async function loadReputation(p: PlenumState): Promise<Summary | null> {
   if (AGENT_ID === undefined) return null;
@@ -50,7 +50,7 @@ export function AgentIdentity({ summary }: { summary: Summary | null }) {
         <span>
           {summary.count === 0
             ? "No ratings from members yet"
-            : `Rated ${Math.round(summary.score)}/100 by ${summary.count} verified member${summary.count === 1 ? "" : "s"}`}
+            : `Rated ${Math.round(summary.score)}/100 by ${summary.count} member${summary.count === 1 ? "" : "s"}`}
         </span>
       ) : null}
     </div>

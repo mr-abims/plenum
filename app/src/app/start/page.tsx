@@ -2,18 +2,21 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Check, Copy, Fingerprint, IdentificationBadge, Info, LockKey, SlidersHorizontal } from "@phosphor-icons/react";
+import { motion } from "motion/react";
+import { ArrowRight, Check, Copy, Fingerprint, Info, LockKey, Rocket, SlidersHorizontal, User, UsersThree } from "@phosphor-icons/react";
+import Link from "next/link";
+import { AccountSetup } from "@/components/AccountSetup";
 import { Seal } from "@/components/Seal";
-import { Button, Card, Chip, Field, MockTag, Notice, inputClass } from "@/components/ui";
+import { Button, Card, Chip, Field, Notice, inputClass } from "@/components/ui";
 import { money } from "@/lib/format";
 import { CURRENCIES, usdRates } from "@/lib/fx";
-import { isVerified, USD } from "@/lib/plenum";
+import { USD } from "@/lib/plenum";
+import { useAccountSetup } from "@/lib/useAccountSetup";
 import { useSession, type Profile } from "@/lib/session";
 
 const STEPS = [
   { key: "passkey", label: "Passkey", icon: Fingerprint },
-  { key: "verify", label: "Verified", icon: IdentificationBadge },
+  { key: "ready", label: "Ready", icon: Rocket },
   { key: "prefs", label: "Preferences", icon: SlidersHorizontal },
 ] as const;
 
@@ -41,9 +44,7 @@ function Stepper({ at }: { at: number }) {
 
 function Start() {
   const { session, profile, busy, error, create, login, saveProfile } = useSession();
-  const reduce = useReducedMotion();
   const [name, setName] = useState("");
-  const [verified, setVerified] = useState<boolean | null>(null);
   const [draft, setDraft] = useState<Profile>(profile);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,22 +55,9 @@ function Start() {
 
   useEffect(() => setDraft(profile), [profile]);
   useEffect(() => void usdRates().then(setRates).catch(() => {}), []);
-  useEffect(() => {
-    if (!session) return;
-    let live = true;
-    const poll = async () => {
-      const v = await isVerified(session.account.address).catch(() => false);
-      if (live) setVerified(v);
-    };
-    void poll();
-    const id = setInterval(poll, 8000);
-    return () => {
-      live = false;
-      clearInterval(id);
-    };
-  }, [session]);
+  const setup = useAccountSetup(session);
 
-  const at = !session ? 0 : verified ? 2 : 1;
+  const at = !session ? 0 : setup.ready ? 2 : 1;
 
   if (!session) {
     return (
@@ -84,7 +72,7 @@ function Start() {
             {[
               [Fingerprint, "Signs every approval and vote, on your device"],
               [LockKey, "Derives the key that encrypts your documents"],
-              [IdentificationBadge, "One account for every group you join"],
+              [UsersThree, "One account for every group you join, ready to use straight away"],
             ].map(([I, t]) => {
               const Icon = I as typeof Fingerprint;
               return (
@@ -144,12 +132,11 @@ function Start() {
 
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-xl font-semibold tracking-tight">Identity check</h2>
-          {verified === null ? <Chip>Checking…</Chip> : verified ? <Chip tone="accent">Verified</Chip> : <Chip tone="warn">Not verified yet</Chip>}
+          <h2 className="font-display text-xl font-semibold tracking-tight">Your account</h2>
+          {setup.ready ? <Chip tone="accent">Ready</Chip> : <Chip>Setting up…</Chip>}
         </div>
         <p className="text-sm leading-relaxed text-muted">
-          Only verified people can join a group, put money in or receive money.{" "}
-          {verified ? "You're all set." : "Send this account ID to your group's organizer to get verified. This page updates on its own."}
+          Rebuilt from your passkey on any device. Share this ID if someone wants to send you a personal invite.
         </p>
         <div className="flex items-center gap-2 rounded-2xl border border-line bg-sunk p-2">
           <code className="min-w-0 flex-1 truncate px-2 font-mono text-xs">{address}</code>
@@ -165,14 +152,37 @@ function Start() {
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
-        <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
-          Verified through a signed Cleanverse attestation, checked onchain. On testnet a <MockTag>MOCK signer</MockTag> signs until Cleanverse issues its own key.
-        </p>
+        <AccountSetup setup={setup} />
+        {next ? (
+          <Button size="lg" className="w-full" disabled={!setup.ready} onClick={() => router.push(next)}>
+            Continue <ArrowRight size={17} />
+          </Button>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/create"
+              aria-disabled={!setup.ready}
+              className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-[15px] font-medium text-accent-ink transition hover:brightness-110 ${setup.ready ? "" : "pointer-events-none opacity-45"}`}
+            >
+              <UsersThree size={17} /> Start a group
+            </Link>
+            <Link
+              href="/create?mode=personal"
+              aria-disabled={!setup.ready}
+              className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line-strong px-6 text-[15px] font-medium transition hover:border-faint ${setup.ready ? "" : "pointer-events-none opacity-45"}`}
+            >
+              <User size={17} /> Just me
+            </Link>
+          </div>
+        )}
+        <p className="text-xs text-muted">Joining a friend's group? Open the invite link they sent you.</p>
       </Card>
 
       <Card className="space-y-5">
         <div>
-          <h2 className="font-display text-xl font-semibold tracking-tight">Your preferences</h2>
+          <h2 className="font-display text-xl font-semibold tracking-tight">
+            Your preferences <span className="text-sm font-normal text-muted">(optional)</span>
+          </h2>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted">
             <LockKey size={15} /> Encrypted with your passkey before it leaves this device.
           </p>
@@ -221,11 +231,6 @@ function Start() {
         </div>
       </Card>
 
-      {next ? (
-        <Button size="lg" className="w-full" onClick={() => router.push(next)}>
-          Continue <ArrowRight size={17} />
-        </Button>
-      ) : null}
     </div>
   );
 }

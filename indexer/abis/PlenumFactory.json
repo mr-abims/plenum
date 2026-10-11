@@ -28,17 +28,12 @@
             "internalType": "address"
           },
           {
-            "name": "aToken",
+            "name": "asset",
             "type": "address",
             "internalType": "address"
           },
           {
             "name": "navOracle",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "complianceGate",
             "type": "address",
             "internalType": "address"
           },
@@ -54,20 +49,7 @@
   },
   {
     "type": "function",
-    "name": "aToken",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "complianceGate",
+    "name": "asset",
     "inputs": [],
     "outputs": [
       {
@@ -169,11 +151,6 @@
             "name": "timelock",
             "type": "uint32",
             "internalType": "uint32"
-          },
-          {
-            "name": "jurisdictionsRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
           },
           {
             "name": "pauseQuorum",

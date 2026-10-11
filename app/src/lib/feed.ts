@@ -5,7 +5,7 @@ import { adapterName, CHAIN, DEPLOYMENT, INDEXER_URL } from "./config";
 import type { PlenumState } from "./plenum";
 
 export type FeedKind =
-  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "REFUSED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
+  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
   | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER";
 
 export interface FeedItem {
@@ -100,7 +100,6 @@ async function fromChain(p: PlenumState): Promise<FeedItem[]> {
       case "MemberJoined": items.push({ ...base, kind: "JOINED", actor: a.member, detail: "joined" }); break;
       case "Contributed": items.push({ ...base, kind: "CONTRIBUTED", actor: a.member, amount: a.assets, detail: "" }); break;
       case "Redeemed": items.push({ ...base, kind: "REDEEMED", actor: a.member, amount: a.assets, detail: `paid to ${a.to}` }); break;
-      case "ComplianceRefused": items.push({ ...base, kind: "REFUSED", actor: a.account, detail: REASONS[a.reason] ?? "" }); break;
       case "ActionExecuted":
         items.push({ ...base, kind: "ADAPTER", actor: a.adapter, amount: a.assets, detail: `${OPS[a.op]} · ${adapterName(a.adapter)}` });
         break;

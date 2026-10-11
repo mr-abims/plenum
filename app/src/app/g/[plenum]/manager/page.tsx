@@ -18,11 +18,11 @@ import { inTimeZone, money } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
 
-const MANAGER_KINDS = ["MANAGER_ACTION", "ESCALATED", "ADAPTER", "NAV", "PAUSED", "UNPAUSED", "REFUSED"];
+const MANAGER_KINDS = ["MANAGER_ACTION", "ESCALATED", "ADAPTER", "NAV", "PAUSED", "UNPAUSED"];
 const FILTERS = [
   { key: "all", label: "Everything", match: () => true },
   { key: "acted", label: "Acted", match: (i: FeedItem) => (i.kind === "MANAGER_ACTION" && i.detail === "OK") || i.kind === "ADAPTER" },
-  { key: "refused", label: "Refused", match: (i: FeedItem) => (i.kind === "MANAGER_ACTION" && i.detail !== "OK") || i.kind === "REFUSED" },
+  { key: "refused", label: "Refused", match: (i: FeedItem) => (i.kind === "MANAGER_ACTION" && i.detail !== "OK") },
   { key: "asked", label: "Asked members", match: (i: FeedItem) => i.kind === "ESCALATED" },
   { key: "prices", label: "Prices", match: (i: FeedItem) => i.kind === "NAV" },
 ] as const;
@@ -132,7 +132,7 @@ export default function ManagerPage() {
         ) : (
           <ol className="relative mt-8 space-y-4 before:absolute before:bottom-4 before:left-[19px] before:top-4 before:w-px before:bg-line">
             {shown.map((i, n) => {
-              const refused = (i.kind === "MANAGER_ACTION" && i.detail !== "OK") || i.kind === "REFUSED" || i.kind === "PAUSED";
+              const refused = (i.kind === "MANAGER_ACTION" && i.detail !== "OK") || i.kind === "PAUSED";
               const dot = refused ? "border-bad/50 text-bad" : i.kind === "ESCALATED" ? "border-warn/50 text-warn" : i.kind === "NAV" ? "border-info/50 text-info" : "border-accent/50 text-accent";
               return (
                 <motion.li

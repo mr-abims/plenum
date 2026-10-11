@@ -14,7 +14,7 @@ enum Op {
 struct Action {
     address adapter; // must be on the mandate allowlist
     Op op;
-    uint256 assets; // A-Token units (6 decimals); requestId for Op.Claim
+    uint256 assets; // settlement-asset units (6 decimals); requestId for Op.Claim
 }
 
 /// @notice Why a check refused an action. Order is part of the ABI (Envio, agent, UI depend on it).
@@ -28,9 +28,6 @@ enum Reason {
     NAV_STALE,
     COOLDOWN,
     PAUSED,
-    PAYEE_NOT_VERIFIED,
-    MEMBER_NOT_VERIFIED,
-    JURISDICTION_BLOCKED,
     MEMBER_CAP
 }
 
@@ -45,7 +42,7 @@ struct MandateConfig {
     address[] adapters; // allowlist; index i matches targetBps[i]
     uint16[] targetBps; // target weight per adapter, basis points of NAV
     uint16[] bandBps; // allowed drift either side of target
-    uint16 minLiquidityBps; // floor held as A-Token cash
+    uint16 minLiquidityBps; // floor held as settlement-asset cash
     uint16 maxTradeBps; // largest single action, % of NAV
     uint16 maxDailyTurnoverBps;
     uint32 navMaxAge; // seconds before NAV counts as stale
@@ -54,7 +51,6 @@ struct MandateConfig {
     uint16 escalateQuorumBps; // approvals needed for escalations
     uint16 mandateChangeBps; // supermajority for mandate changes
     uint32 timelock; // delay before a mandate change applies
-    bytes32 jurisdictionsRoot; // stretch: Merkle root of allowed country codes
     uint16 pauseQuorum; // k in k-of-n: member pause votes needed to pause the manager
     uint32 votingPeriod; // seconds an escalation stays open (SPEC A19)
 }

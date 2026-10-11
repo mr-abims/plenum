@@ -12,12 +12,11 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IPlenum} from "../interfaces/IPlenum.sol";
 import {IMandate} from "../interfaces/IMandate.sol";
 import {INavOracle} from "../interfaces/INavOracle.sol";
-import {IComplianceGate} from "../interfaces/IComplianceGate.sol";
 import {IAssetAdapter} from "../interfaces/IAssetAdapter.sol";
 import {Action, Op, PolicyViolation, Reason, Unauthorized} from "../interfaces/Types.sol";
 
 /// @title Plenum
-/// @notice One group's members, non-transferable units and A-Token custody. Executes actions only when called
+/// @notice One group's members, non-transferable units and custody of the settlement asset. Executes actions only when called
 ///         by its ManagerGateway or Governance, after their checks pass. Deployed as a minimal-proxy clone.
 /// @dev Pricing (SPEC §7, A8): units = assets × (U + 10^6) / (V + 1); assets = units × (V + 1) / (U + 10^6),
 ///      with V = latest NAV + net flows since that report, and V = 0 while U = 0 (bootstrap).
@@ -31,12 +30,11 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     bytes32 public constant INVITE_TYPEHASH = keccak256("Invite(address invitee,uint256 nonce,uint64 expiry)");
 
     string public name;
-    address public aToken;
+    address public asset;
     address public mandate;
     address public governance;
     address public gateway;
     address public navOracle;
-    address public complianceGate;
     address public organizer;
 
     uint256 public override totalUnits;
@@ -68,18 +66,17 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     /// @inheritdoc IPlenum
     function initialize(InitParams calldata p) external initializer {
         name = p.name;
-        aToken = p.aToken;
+        asset = p.asset;
         mandate = p.mandate;
         governance = p.governance;
         gateway = p.gateway;
         navOracle = p.navOracle;
-        complianceGate = p.complianceGate;
         organizer = p.organizer;
     }
 
     /// @inheritdoc IPlenum
-    /// @dev `invite` = abi.encode(address invitee, uint256 nonce, uint64 expiry, bytes signature). An unverified
-    ///      caller gets `ComplianceRefused` and the invite stays unused.
+    /// @dev `invite` = abi.encode(address invitee, uint256 nonce, uint64 expiry, bytes signature). The signed invite
+    ///      is the admission control (SPEC A25): only the organizer or an existing member can let someone in.
     function join(bytes calldata invite, bytes32 encPubKey) external nonReentrant {
         if (isMember[msg.sender]) revert AlreadyMember(msg.sender);
         (address invitee, uint256 nonce, uint64 expiry, bytes memory sig) =
@@ -90,11 +87,6 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         address signer = ECDSA.recover(inviteDigest(invitee, nonce, expiry), sig);
         if (signer != organizer && !isMember[signer]) revert InvalidInviteSigner(signer);
 
-        Reason r = IComplianceGate(complianceGate).checkMember(msg.sender);
-        if (r != Reason.OK) {
-            emit ComplianceRefused(msg.sender, r);
-            return;
-        }
         if (memberCount >= IMandate(mandate).maxMembers()) revert PolicyViolation(Reason.MEMBER_CAP);
 
         inviteUsed[nonce] = true;
@@ -111,14 +103,8 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     }
 
     /// @inheritdoc IPlenum
-    /// @dev An unverified caller gets `ComplianceRefused` and no tokens move (SPEC A1).
     function contribute(uint256 assets) external nonReentrant returns (uint256 units) {
         if (assets == 0) revert ZeroAmount();
-        Reason r = IComplianceGate(complianceGate).checkMember(msg.sender);
-        if (r != Reason.OK) {
-            emit ComplianceRefused(msg.sender, r);
-            return 0;
-        }
         if (!isMember[msg.sender]) revert NotMember(msg.sender);
 
         uint256 u = totalUnits;
@@ -130,22 +116,16 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         totalUnits = u + units;
         unitsOf[msg.sender] += units;
         netFlowSince += SafeCast.toInt256(assets);
-        IERC20(aToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
         emit Contributed(msg.sender, assets, units, navPerUnit);
     }
 
     /// @inheritdoc IPlenum
-    /// @dev An unverified payee gets `ComplianceRefused` and nothing changes (SPEC A1). Members whose own identity
-    ///      was revoked can still redeem, but only to a verified address. Paid from cash only (queue is stretch).
+    /// @dev Paid from cash only (a redemption queue is stretch).
     function redeem(uint256 units, address to) external nonReentrant returns (uint256 assets) {
         if (units == 0) revert ZeroAmount();
         uint256 held = unitsOf[msg.sender];
         if (units > held) revert InsufficientUnits(units, held);
-        Reason r = IComplianceGate(complianceGate).checkPayee(to);
-        if (r != Reason.OK) {
-            emit ComplianceRefused(to, r);
-            return 0;
-        }
 
         uint256 u = totalUnits;
         assets = Math.mulDiv(units, _navValue() + 1, u + OFFSET);
@@ -154,7 +134,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         unitsOf[msg.sender] = held - units;
         totalUnits = u - units;
         netFlowSince -= SafeCast.toInt256(assets);
-        IERC20(aToken).safeTransfer(to, assets);
+        IERC20(asset).safeTransfer(to, assets);
         emit Redeemed(msg.sender, units, assets, to);
     }
 
@@ -169,9 +149,9 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
             IAssetAdapter adapter = IAssetAdapter(act.adapter);
             uint256 result = 0; // requestId for RequestRedeem, assets for Claim, else 0
             if (act.op == Op.Deposit) {
-                IERC20(aToken).forceApprove(act.adapter, act.assets);
+                IERC20(asset).forceApprove(act.adapter, act.assets);
                 adapter.deposit(act.assets);
-                IERC20(aToken).forceApprove(act.adapter, 0);
+                IERC20(asset).forceApprove(act.adapter, 0);
             } else if (act.op == Op.Withdraw) {
                 adapter.withdraw(act.assets);
             } else if (act.op == Op.RequestRedeem) {
@@ -190,7 +170,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
 
     /// @inheritdoc IPlenum
     function cash() public view returns (uint256) {
-        return IERC20(aToken).balanceOf(address(this));
+        return IERC20(asset).balanceOf(address(this));
     }
 
     /// @notice V used for pricing: latest NAV plus net flows since it. Read-only twin of `_navValue`.

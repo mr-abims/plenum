@@ -6,10 +6,8 @@ import deployment from "./deployment.json";
 export const DEPLOYMENT = deployment as unknown as {
   chainId: number;
   startBlock: number;
-  identityProvider: Address;
-  aToken: Address;
+  asset: Address;
   navOracle: Address;
-  complianceGate: Address;
   consentRegistry: Address;
   tbillVault: Address;
   creditVault: Address;

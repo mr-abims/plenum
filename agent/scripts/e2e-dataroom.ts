@@ -10,7 +10,6 @@ import { createPublicClient, createWalletClient, encodeAbiParameters, http, kecc
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import { consentRegistryAbi, plenumAbi } from "@plenum/abis";
-import { attest, LOCAL_ATTESTER_KEY } from "../redteam/attest.ts";
 import {
   addReader, blobMessage, canonicalJson, decryptDocument, deriveEncryptionKey, encryptDocument, memoDocId, publicKeyToBytes32, riskDocId, type Envelope,
 } from "@plenum/crypto";
@@ -54,8 +53,7 @@ async function putBlob(key: Hex, id: string, env: Envelope) {
   if (!res.ok) throw new Error(`PUT ${id}: ${res.status} ${await res.text()}`);
 }
 
-// 1. Member is verified by a signed Cleanverse attestation (MOCK attester) and joins with an invite and their data-room public key.
-await attest({ rpcUrl: RPC, chain: foundry, registrar: raw.attestationRegistrar, attesterKey: LOCAL_ATTESTER_KEY, relayerKey: DEPLOYER, subject: member.address, country: "0x4e47" });
+// 1. Member joins with an invite and their data-room public key.
 const expiry = (await pc.getBlock()).timestamp + 86_400n;
 const sig = await wallet(DEPLOYER).signTypedData({
   domain: { name: "Plenum", version: "1", chainId: 31337, verifyingContract: plenum },

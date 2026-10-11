@@ -33,7 +33,7 @@ export type Env = z.infer<typeof EnvSchema>;
 export const DeploymentSchema = z.object({
   chainId: z.number(),
   startBlock: z.number(),
-  aToken: address,
+  asset: address,
   navOracle: address,
   consentRegistry: address,
   tbillVault: address,

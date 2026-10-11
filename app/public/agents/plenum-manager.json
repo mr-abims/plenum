@@ -28,7 +28,7 @@
     "operator": "0x6B050A5Acc5A693916614C2fb365Dc60cc9db8D8",
     "callsOnly": "ManagerGateway (executeInBand, escalate)",
     "canWithdraw": false,
-    "reputation": "Feedback counts only from Cleanverse-verified members of the group (tag1 \"plenum\")",
+    "reputation": "Feedback counts only from members of the group, each admitted by a member-signed invite (tag1 \"plenum\")",
     "testnetOnly": true
   }
 }

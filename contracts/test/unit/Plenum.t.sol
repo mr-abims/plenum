@@ -60,13 +60,14 @@ contract PlenumTest is Fixture {
         assertTrue(plenum.isMember(wei_));
     }
 
-    function test_join_unverifiedIsRefusedAndInviteStaysUnused() public {
-        bytes memory inv = _invite(anaPk, stranger, 3, uint64(block.timestamp + 1 days));
-        vm.expectEmit(address(plenum));
-        emit IPlenum.ComplianceRefused(stranger, Reason.MEMBER_NOT_VERIFIED);
-        vm.prank(stranger);
+    function test_join_outsiderCannotInviteThemselves() public {
+        uint256 outsiderPk = 0xBAD;
+        address outsider = vm.addr(outsiderPk);
+        bytes memory inv = _invite(outsiderPk, outsider, 3, uint64(block.timestamp + 1 days));
+        vm.prank(outsider);
+        vm.expectRevert(abi.encodeWithSelector(Plenum.InvalidInviteSigner.selector, outsider));
         plenum.join(inv, bytes32(0));
-        assertFalse(plenum.isMember(stranger));
+        assertFalse(plenum.isMember(outsider));
         assertFalse(plenum.inviteUsed(3));
     }
 
@@ -104,16 +105,7 @@ contract PlenumTest is Fixture {
         assertEq(plenum.cash(), 100 * USD);
     }
 
-    function test_contribute_unverifiedIsRefusedOnchain() public {
-        aToken.mint(ana, 10 * USD); // stranger can't even hold mvUSD; refusal happens before any transfer
-        vm.expectEmit(address(plenum));
-        emit IPlenum.ComplianceRefused(stranger, Reason.MEMBER_NOT_VERIFIED);
-        vm.prank(stranger);
-        assertEq(plenum.contribute(10 * USD), 0);
-        assertEq(plenum.totalUnits(), 0);
-    }
-
-    function test_contribute_verifiedNonMemberReverts() public {
+    function test_contribute_nonMemberReverts() public {
         _fund(jonas, 10 * USD);
         vm.prank(jonas);
         vm.expectRevert(abi.encodeWithSelector(Plenum.NotMember.selector, jonas));
@@ -169,7 +161,7 @@ contract PlenumTest is Fixture {
 
     // ---------------------------------------------------------------- redeem
 
-    function test_redeem_toVerifiedPayee() public {
+    function test_redeem_toAnotherAddress() public {
         _join(ana, 1);
         _fund(ana, 100 * USD);
         vm.prank(ana);
@@ -178,34 +170,26 @@ contract PlenumTest is Fixture {
         vm.prank(ana);
         uint256 assets = plenum.redeem(units / 2, jonas);
         assertApproxEqAbs(assets, 50 * USD, 1);
-        assertEq(aToken.balanceOf(jonas), assets);
+        assertEq(usd.balanceOf(jonas), assets);
         assertEq(plenum.unitsOf(ana), units - units / 2);
     }
 
-    function test_redeem_unverifiedPayeeIsRefused() public {
+    function test_redeem_memberChoosesWhereTheMoneyGoes() public {
         _join(ana, 1);
         _fund(ana, 100 * USD);
         vm.prank(ana);
         uint256 units = plenum.contribute(100 * USD);
         _postNav(100 * USD);
-        vm.expectEmit(address(plenum));
-        emit IPlenum.ComplianceRefused(stranger, Reason.PAYEE_NOT_VERIFIED);
         vm.prank(ana);
-        assertEq(plenum.redeem(units, stranger), 0);
-        assertEq(plenum.unitsOf(ana), units);
-        assertEq(plenum.cash(), 100 * USD);
+        uint256 assets = plenum.redeem(units, stranger);
+        assertEq(usd.balanceOf(stranger), assets);
+        assertEq(plenum.unitsOf(ana), 0);
     }
 
-    function test_redeem_revokedMemberCanExitToVerifiedAddress() public {
-        _join(ana, 1);
-        _fund(ana, 100 * USD);
-        vm.prank(ana);
-        uint256 units = plenum.contribute(100 * USD);
-        _postNav(100 * USD);
-        identity.setIdentity(ana, false, 0, bytes2(0));
-        vm.prank(ana);
-        plenum.redeem(units, jonas);
-        assertEq(plenum.unitsOf(ana), 0);
+    function test_redeem_nonMemberHasNothingToRedeem() public {
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(Plenum.InsufficientUnits.selector, 1, 0));
+        plenum.redeem(1, stranger);
     }
 
     function test_redeem_beyondCashReverts() public {
@@ -244,7 +228,7 @@ contract PlenumTest is Fixture {
         assertEq(tbill.valueOf(address(plenum)), 4_500 * USD);
         assertEq(credit.valueOf(address(plenum)), 2_000 * USD);
         assertApproxEqAbs(gold.valueOf(address(plenum)), 1_500 * USD, 1);
-        assertEq(aToken.allowance(address(plenum), address(tbill)), 0); // approvals reset
+        assertEq(usd.allowance(address(plenum), address(tbill)), 0); // approvals reset
     }
 
     function test_execute_governanceMayCall() public {

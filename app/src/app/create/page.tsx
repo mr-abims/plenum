@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -10,12 +10,13 @@ import { plenumAbi, plenumFactoryAbi } from "@plenum/abis";
 import { publicKeyToBytes32 } from "@plenum/crypto";
 import { ChamberDial, rowsFromTemplate } from "@/components/ChamberDial";
 import { TxSteps } from "@/components/TxSteps";
-import { Button, Card, Field, MockTag, Notice, inputClass } from "@/components/ui";
+import { Button, Card, Field, MockTag, inputClass } from "@/components/ui";
 import { publicClient, send } from "@/lib/chain";
 import { adapterName, DEPLOYMENT, MANAGER_ADDRESS } from "@/lib/config";
 import { pct } from "@/lib/format";
 import { encodeInvite, signInvite } from "@/lib/invite";
-import { isVerified } from "@/lib/plenum";
+import { AccountSetup } from "@/components/AccountSetup";
+import { useAccountSetup } from "@/lib/useAccountSetup";
 import { useSession } from "@/lib/session";
 import { mandateConfig, TEMPLATES, type Template } from "@/lib/templates";
 import { useTx } from "@/lib/useTx";
@@ -39,12 +40,8 @@ function Create() {
   const [name, setName] = useState(startPersonal ? "My portfolio" : "");
   const noun = personal ? "portfolio" : "group";
   const [template, setTemplate] = useState<Template>(TEMPLATES[1]);
-  const [verified, setVerified] = useState<boolean | null>(null);
   const tx = useTx();
-
-  useEffect(() => {
-    if (session) void isVerified(session.account.address).then(setVerified);
-  }, [session]);
+  const setup = useAccountSetup(session);
 
   if (!session) {
     return (
@@ -148,15 +145,9 @@ function Create() {
               The rules decide what the AI manager may buy, how far each holding may drift, how much cash stays on hand and how big one trade can be. They're written into a contract the manager can't change.
             </p>
 
-            {verified === false ? (
+            {!setup.ready ? (
               <div className="mt-6 max-w-2xl">
-                <Notice tone="warn">
-                  You need to be verified before you can create a {noun}.{" "}
-                  <Link className="text-accent underline-offset-4 hover:underline" href="/start">
-                    Check your status
-                  </Link>
-                  .
-                </Notice>
+                <AccountSetup setup={setup} />
               </div>
             ) : null}
 
@@ -251,7 +242,7 @@ function Create() {
                 <Field label={personal ? "Portfolio name" : "Group name"} hint={`${personal ? "Shown on your dashboard" : "Members see this name"}. It's stored onchain, so keep personal details out of it.`}>
                   <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={personal ? "My portfolio" : "São Paulo Investment Club"} disabled={tx.busy} />
                 </Field>
-                <Button size="lg" className="w-full" busy={tx.busy} disabled={!name.trim() || verified !== true || tx.busy} onClick={create}>
+                <Button size="lg" className="w-full" busy={tx.busy} disabled={!name.trim() || !setup.ready || tx.busy} onClick={create}>
                   {personal ? "Create my portfolio" : "Create group"}
                 </Button>
                 <TxSteps steps={tx.steps} error={tx.error} />

@@ -5,7 +5,7 @@ import { join } from "node:path";
 const OUT = join(import.meta.dirname, "../../contracts/out");
 const CONTRACTS = [
   "Plenum", "Mandate", "Governance", "ManagerGateway", "NavOracle", "ConsentRegistry", "PlenumFactory",
-  "IAssetAdapter", "ComplianceGate", "MockIdentityProvider", "CleanverseAttestationRegistrar", "MockAToken", "MockTBillVault", "MockCreditVault", "MockGold",
+  "IAssetAdapter", "MockUSD", "MockTBillVault", "MockCreditVault", "MockGold",
 ];
 
 const lower = (s) => s[0].toLowerCase() + s.slice(1);
@@ -32,7 +32,7 @@ export const ERC8004 = {
 ts += `/** Reason enum order from contracts/src/interfaces/Types.sol (ABI: decoded by ordinal). */
 export const REASONS = [
   "OK", "ADAPTER_NOT_ALLOWED", "WEIGHT_OUT_OF_BAND", "LIQUIDITY_FLOOR", "TRADE_TOO_LARGE", "TURNOVER_CAP",
-  "NAV_STALE", "COOLDOWN", "PAUSED", "PAYEE_NOT_VERIFIED", "MEMBER_NOT_VERIFIED", "JURISDICTION_BLOCKED", "MEMBER_CAP",
+  "NAV_STALE", "COOLDOWN", "PAUSED", "MEMBER_CAP",
 ] as const;
 export type Reason = (typeof REASONS)[number];
 

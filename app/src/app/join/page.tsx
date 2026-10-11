@@ -15,7 +15,9 @@ import { Button, Card, Chip, Notice } from "@/components/ui";
 import { publicClient, send } from "@/lib/chain";
 import { inTimeZone, pct } from "@/lib/format";
 import { encodeInvite, parseInvite } from "@/lib/invite";
-import { isVerified, loadPlenum, type PlenumState } from "@/lib/plenum";
+import { loadPlenum, type PlenumState } from "@/lib/plenum";
+import { AccountSetup } from "@/components/AccountSetup";
+import { useAccountSetup } from "@/lib/useAccountSetup";
 import { useSession } from "@/lib/session";
 import { useTx } from "@/lib/useTx";
 
@@ -25,15 +27,12 @@ function Join() {
   const { session, profile } = useSession();
   const router = useRouter();
   const [group, setGroup] = useState<PlenumState | null>(null);
-  const [verified, setVerified] = useState<boolean | null>(null);
   const tx = useTx();
+  const setup = useAccountSetup(session);
 
   useEffect(() => {
     if (invite) void loadPlenum(invite.plenum).then(setGroup).catch(() => {});
   }, [invite?.plenum]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (session) void isVerified(session.account.address).then(setVerified);
-  }, [session]);
 
   if (!invite) {
     return (
@@ -57,7 +56,7 @@ function Join() {
         run: async (sent) => {
           await send(session.account, { address: invite.plenum, abi: plenumAbi, functionName: "join", args: [encodeInvite(invite), publicKeyToBytes32(session.encryption.publicKey)] }, sent);
           const member = await publicClient.readContract({ address: invite.plenum, abi: plenumAbi, functionName: "isMember", args: [session.account.address] });
-          if (!member) throw new Error("Not joined: your identity isn't verified yet. Ask the organizer to verify your account ID.");
+          if (!member) throw new Error("Not joined. Ask the member who invited you for a new link.");
         },
       },
     ]);
@@ -77,7 +76,7 @@ function Join() {
         {group ? (
           <ul className="mt-8 space-y-3 text-sm text-muted">
             <li>
-              {group.memberCount} member{group.memberCount === 1 ? "" : "s"}, each verified
+              {group.memberCount} member{group.memberCount === 1 ? "" : "s"}, each invited by a member
             </li>
             <li>
               An AI manager bound by {group.sleeves.length} approved assets, trades of at most {pct(group.maxTradeBps, 0)} and a {pct(group.minLiquidityBps, 0)} cash floor
@@ -108,17 +107,9 @@ function Join() {
           </>
         ) : (
           <>
-            {verified === false ? (
-              <Notice tone="warn">
-                Only verified people can join.{" "}
-                <Link className="text-accent underline-offset-4 hover:underline" href="/start">
-                  Get verified
-                </Link>{" "}
-                first.
-              </Notice>
-            ) : null}
+            <AccountSetup setup={setup} />
             <p className="text-sm leading-relaxed text-muted">Joining publishes a public key so members can share encrypted documents with you. The documents themselves stay encrypted.</p>
-            <Button size="lg" busy={tx.busy} disabled={expired || !!forSomeoneElse || verified !== true || tx.busy} onClick={join} className="w-full">
+            <Button size="lg" busy={tx.busy} disabled={expired || !!forSomeoneElse || !setup.ready || tx.busy} onClick={join} className="w-full">
               Join with passkey
             </Button>
             <TxSteps steps={tx.steps} error={tx.error} />

@@ -19,7 +19,7 @@
   },
   {
     "type": "function",
-    "name": "aToken",
+    "name": "asset",
     "inputs": [],
     "outputs": [
       {
@@ -39,19 +39,6 @@
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "complianceGate",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -226,7 +213,7 @@
             "internalType": "string"
           },
           {
-            "name": "aToken",
+            "name": "asset",
             "type": "address",
             "internalType": "address"
           },
@@ -247,11 +234,6 @@
           },
           {
             "name": "navOracle",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "complianceGate",
             "type": "address",
             "internalType": "address"
           },
@@ -538,25 +520,6 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ComplianceRefused",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "reason",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "enum Reason"
       }
     ],
     "anonymous": false

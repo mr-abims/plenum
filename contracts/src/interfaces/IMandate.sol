@@ -22,7 +22,7 @@ interface IMandate {
     /// @notice Maximum number of members (≤ 99).
     function maxMembers() external view returns (uint16);
 
-    /// @notice Cash plus every adapter's value and pending value, read onchain (A-Token units).
+    /// @notice Cash plus every adapter's value and pending value, read onchain (settlement-asset units).
     function holdingsTotal() external view returns (uint256);
 
     /// @notice True when `adapter` is on the allowlist.

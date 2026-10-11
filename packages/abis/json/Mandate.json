@@ -118,11 +118,6 @@
             "internalType": "uint32"
           },
           {
-            "name": "jurisdictionsRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
             "name": "pauseQuorum",
             "type": "uint16",
             "internalType": "uint16"
@@ -246,11 +241,6 @@
             "name": "timelock",
             "type": "uint32",
             "internalType": "uint32"
-          },
-          {
-            "name": "jurisdictionsRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
           },
           {
             "name": "pauseQuorum",
@@ -407,11 +397,6 @@
             "name": "timelock",
             "type": "uint32",
             "internalType": "uint32"
-          },
-          {
-            "name": "jurisdictionsRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
           },
           {
             "name": "pauseQuorum",

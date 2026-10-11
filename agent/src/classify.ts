@@ -15,6 +15,6 @@ export function classify(reason: Reason): Disposition {
     case "TURNOVER_CAP":
       return "wait";
     default:
-      return "drop"; // ADAPTER_NOT_ALLOWED, NAV_STALE, PAUSED, *_NOT_VERIFIED, JURISDICTION_BLOCKED, MEMBER_CAP
+      return "drop"; // ADAPTER_NOT_ALLOWED, NAV_STALE, PAUSED, MEMBER_CAP
   }
 }

@@ -12,17 +12,16 @@ import { QuorumSeats } from "@/components/QuorumSeats";
 import { Seal } from "@/components/Seal";
 import { Skeleton } from "@/components/Skeleton";
 import { TxSteps } from "@/components/TxSteps";
-import { Button, Card, Chip, MockTag, PageHeader } from "@/components/ui";
+import { Button, Card, PageHeader } from "@/components/ui";
 import { confirmWithPasskey } from "@/lib/account";
 import { publicClient, send } from "@/lib/chain";
 import { loadMembers, type MemberRow } from "@/lib/feed";
 import { pct } from "@/lib/format";
-import { isVerified } from "@/lib/plenum";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
 import { useTx } from "@/lib/useTx";
 
-type Row = MemberRow & { units: bigint; verified: boolean };
+type Row = MemberRow & { units: bigint };
 
 export default function MembersPage() {
   const { plenum } = useParams<{ plenum: Addr }>();
@@ -39,7 +38,6 @@ export default function MembersPage() {
           ms.map(async (m) => ({
             ...m,
             units: await publicClient.readContract({ address: p.address, abi: plenumAbi, functionName: "unitsOf", args: [m.address] }),
-            verified: await isVerified(m.address),
           })),
         ),
       ),
@@ -63,7 +61,7 @@ export default function MembersPage() {
       {p?.personal ? (
         <PageHeader title="Controls" lead="Only you control this portfolio: you approve bigger moves and can stop the manager at any time." />
       ) : (
-        <PageHeader title="Who's in" lead="Every member passed an identity check. Members own the group: they approve big moves and can stop the manager at any time." />
+        <PageHeader title="Who's in" lead="Every member joined with an invite from another member. Members own the group: they approve big moves and can stop the manager at any time." />
       )}
 
       <div className={`grid gap-6 ${p?.personal ? "max-w-xl" : "lg:grid-cols-[1fr_1fr]"}`}>
@@ -135,14 +133,13 @@ export default function MembersPage() {
                     <p className="font-mono text-sm tabular">{p && p.totalUnits > 0n ? pct(share(r)) : "0%"}</p>
                     <p className="text-xs text-muted">of the group</p>
                   </div>
-                  {r.verified ? <Chip tone="accent">Verified</Chip> : <Chip tone="warn">Verification lapsed</Chip>}
                 </li>
               );
             })}
           </ul>
         )}
         <p className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4 text-xs text-muted">
-          Verified through signed Cleanverse attestations, checked onchain (<MockTag>MOCK signer</MockTag> on testnet). Names stay private: only account IDs are onchain.
+          Everyone here joined with an invite signed by a member, checked onchain. Names stay private: only account IDs are onchain.
         </p>
       </Card>
     </div>

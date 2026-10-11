@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Brain, Fingerprint, IdentificationBadge, Scales } from "@phosphor-icons/react";
+import { Brain, Fingerprint, Scales, Ticket } from "@phosphor-icons/react";
 import { ChamberDial, rowsFromPlenum } from "@/components/ChamberDial";
 import { QuorumSeats } from "@/components/QuorumSeats";
 import { Reveal } from "@/components/Reveal";
@@ -50,21 +50,17 @@ export function Duties() {
       </Reveal>
       <Reveal className="md:col-span-2" delay={0.04}>
         <Cell
-          icon={<IdentificationBadge size={22} weight="duotone" />}
-          duty="Police"
-          who={
-            <span className="inline-flex flex-wrap items-center gap-2">
-              Cleanverse A-Pass <MockTag />
-            </span>
-          }
-          body="Money moves only between verified people. An unverified contribution is refused onchain and the refusal is logged."
-          contract="ComplianceGate"
+          icon={<Ticket size={22} weight="duotone" />}
+          duty="Admit"
+          who="Members, by signed invite"
+          body="Only someone holding an invite signed by a member can join. The contract checks the signature, the expiry and the group's size limit."
+          contract="Plenum.join · EIP-712 invite"
           tint="bg-sunk"
           visual={
             p ? (
               <div className="mt-5 flex items-center gap-3">
                 <Seal address={p.organizer} size={34} />
-                <Chip tone="accent">Verified</Chip>
+                <Chip tone="accent">Invited by a member</Chip>
               </div>
             ) : null
           }

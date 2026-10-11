@@ -4,13 +4,13 @@
   },
   "welcome": {
     "title": "Invest together. Let an AI do the work. Keep it inside your rules.",
-    "lead": "Plenum lets a group pool money and hand day-to-day management to an AI manager. The group writes the rules, an independent administrator prices the fund, and only verified people can put money in or take it out. Investing on your own works too, with the same protections.",
+    "lead": "Plenum lets a group pool money and hand day-to-day management to an AI manager. The group writes the rules, an independent administrator prices the fund, and only people a member invites can join. Investing on your own works too, with the same protections.",
     "create": "Create a group",
     "join": "I have an invite",
     "points": {
       "rules": "Rules the AI can't break. Every trade is checked against your group's rules before it happens.",
       "price": "An independent price. A separate administrator values the fund. The AI never does.",
-      "people": "Verified people only. Money moves only between members who have verified who they are.",
+      "people": "Invite only. Only someone holding an invite signed by a member can join, checked onchain.",
       "fire": "You stay in charge. Bigger moves need your approval, and members can pause the manager at any time."
     }
   },
@@ -26,8 +26,6 @@
   "common": {
     "signIn": "Sign in with passkey",
     "signOut": "Sign out",
-    "verified": "Verified",
-    "notVerified": "Not verified yet",
     "indicative": "indicative rate",
     "working": "Working…"
   },
@@ -40,14 +38,14 @@
     "manifesto": "Professional money management starts around $25 million. Everyone else runs on a spreadsheet and trust in one treasurer.",
     "manifestoB": "AI can now do that job for almost nothing. But no group should have to trust an AI with its money. With Plenum, it doesn't have to.",
     "dutiesTitle": "Four duties. Four different hands.",
-    "dutiesLead": "No part of Plenum both manages and prices, or manages and polices. Each duty is checked by a contract the others can't skip.",
+    "dutiesLead": "No part of Plenum both manages and prices, or manages and decides who gets in. Each duty is checked by a contract the others can't skip.",
     "tryTitle": "Try to break the rules.",
-    "tryLead": "Pick a move for an example group's AI manager. See what its rules allow, refuse, or send to the members for a vote.",
+    "tryLead": "Pick a move for a real group's AI manager on Monad testnet. Its contract answers: allowed, refused, or sent to the members for a vote.",
     "evidenceTitle": "Even with the key, it can't take the money.",
     "evidenceLead": "The worst a fully compromised manager can do is move money between assets the group already approved, within its limits. These are the real transactions.",
     "flowTitle": "From a group chat to a governed fund.",
     "closeTitle": "Your group. Your rules. An AI that answers to both.",
-    "disclaimer": "Plenum is software, not a fund or an adviser. It runs on Monad testnet with test money. Simulated assets and identity checks are labelled MOCK; the backup price writer is labelled FALLBACK.",
+    "disclaimer": "Plenum is software, not a fund or an adviser. It runs on Monad testnet with test money. Simulated assets and test dollars are labelled MOCK; the backup price writer is labelled FALLBACK.",
     "solo": "Investing on your own? Start a personal portfolio"
   }
 }

@@ -15,9 +15,6 @@ export const REASON_INFO: Record<Reason, { label: string; why: string; tone: Ton
   NAV_STALE: { label: "No fresh price", why: "The independent valuation is too old, so nothing can move until the administrator prices the fund again.", tone: "info", kind: "drop" },
   COOLDOWN: { label: "Too soon", why: "The manager must wait between trades.", tone: "neutral", kind: "wait" },
   PAUSED: { label: "Manager paused", why: "Members paused the manager. It cannot trade or propose anything.", tone: "bad", kind: "drop" },
-  PAYEE_NOT_VERIFIED: { label: "Payee not verified", why: "Money can only be paid to a verified person.", tone: "bad", kind: "drop" },
-  MEMBER_NOT_VERIFIED: { label: "Member not verified", why: "Only verified people can put money in or join.", tone: "bad", kind: "drop" },
-  JURISDICTION_BLOCKED: { label: "Country not allowed", why: "The group's rules don't allow members or assets from that place.", tone: "bad", kind: "drop" },
   MEMBER_CAP: { label: "Group is full", why: "A group can have at most 99 members.", tone: "neutral", kind: "drop" },
 };
 

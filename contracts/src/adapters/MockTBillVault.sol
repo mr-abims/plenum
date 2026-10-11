@@ -8,8 +8,8 @@ import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.so
 import {IAssetAdapter} from "../interfaces/IAssetAdapter.sol";
 
 /// @title MockTBillVault — MOCK
-/// @notice MOCK tokenised T-bill: ERC-4626 vault over the A-Token. Yield is simulated by `accrue`, which pulls
-///         A-Token in without minting shares, so every holder's value rises. Sync exits.
+/// @notice MOCK tokenised T-bill: ERC-4626 vault over the settlement asset. Yield is simulated by `accrue`, which pulls
+///         settlement asset in without minting shares, so every holder's value rises. Sync exits.
 contract MockTBillVault is ERC4626, IAssetAdapter {
     using SafeERC20 for IERC20;
 
@@ -17,9 +17,9 @@ contract MockTBillVault is ERC4626, IAssetAdapter {
 
     error AsyncNotSupported();
 
-    constructor(IERC20 aToken) ERC20("MOCK T-Bill Vault", "mTBILL") ERC4626(aToken) {}
+    constructor(IERC20 asset_) ERC20("MOCK T-Bill Vault", "mTBILL") ERC4626(asset_) {}
 
-    /// @notice MOCK: simulate yield by donating `assets` A-Token to the vault.
+    /// @notice MOCK: simulate yield by donating `assets` settlement asset to the vault.
     function accrue(uint256 assets) external {
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
         emit Accrued(msg.sender, assets);

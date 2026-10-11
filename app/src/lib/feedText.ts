@@ -17,8 +17,6 @@ export function feedTitle(i: FeedItem): string {
       return "Members paused the manager";
     case "UNPAUSED":
       return "Members resumed the manager";
-    case "REFUSED":
-      return "Identity check refused a payment";
     case "CONTRIBUTED":
       return "Contribution";
     case "REDEEMED":
@@ -43,8 +41,6 @@ export function feedBody(i: FeedItem): string {
       return i.detail === "FALLBACK"
         ? "Valued by the labelled FALLBACK writer, used only to keep the demo running."
         : "Valued by the Chainlink CRE workflow. The manager never writes prices.";
-    case "REFUSED":
-      return `A payment involving an unverified account was stopped and logged (${i.detail}).`;
     case "ADAPTER":
       return i.detail;
     default:

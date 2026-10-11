@@ -8,7 +8,7 @@ import {NavSource} from "./Types.sol";
 ///         labelled FALLBACK writer. The manager never writes NAV.
 interface INavOracle {
     struct NavReport {
-        uint256 nav; // A-Token units (6 decimals)
+        uint256 nav; // settlement-asset units (6 decimals)
         uint64 timestamp; // as computed by the workflow; strictly increasing per plenum
         NavSource source;
     }

@@ -1,4 +1,4 @@
-# SPEC §11 entities (plus A3). Amounts are A-Token base units (6 decimals); units have 12 decimals.
+# SPEC §11 entities (plus A3). Amounts are settlement-asset base units (6 decimals, MOCK test dollars); units have 12 decimals.
 
 type Plenum {
   id: ID! # plenum address
@@ -14,7 +14,6 @@ type Plenum {
   members: [Member!]! @derivedFrom(field: "plenum")
   managerActions: [ManagerAction!]! @derivedFrom(field: "plenum")
   proposals: [Proposal!]! @derivedFrom(field: "plenum")
-  refusals: [ComplianceRefusal!]! @derivedFrom(field: "plenum")
   navReports: [NavReport!]! @derivedFrom(field: "plenum")
   activity: [Activity!]! @derivedFrom(field: "plenum")
 }
@@ -69,15 +68,6 @@ type Approval {
   timestamp: BigInt!
 }
 
-type ComplianceRefusal {
-  id: ID!
-  plenum: Plenum!
-  account: String!
-  reason: String!
-  txHash: String!
-  timestamp: BigInt!
-}
-
 type NavReport {
   id: ID!
   plenum: Plenum!
@@ -101,7 +91,7 @@ type ConsentGrant {
 type Activity {
   id: ID!
   plenum: Plenum!
-  kind: String! # CONTRIBUTED | REDEEMED | JOINED | REFUSED | MANAGER_ACTION | ESCALATED | APPROVED | EXECUTED | PAUSED | UNPAUSED | NAV | ADAPTER
+  kind: String! # CONTRIBUTED | REDEEMED | JOINED | MANAGER_ACTION | ESCALATED | APPROVED | EXECUTED | PAUSED | UNPAUSED | NAV | ADAPTER
   actor: String!
   amount: BigInt
   detail: String!

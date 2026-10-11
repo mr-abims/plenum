@@ -11,7 +11,7 @@ import {Mandate} from "../../src/core/Mandate.sol";
 import {ManagerGateway} from "../../src/core/ManagerGateway.sol";
 import {Governance} from "../../src/core/Governance.sol";
 import {NavOracle} from "../../src/core/NavOracle.sol";
-import {MockAToken} from "../../src/mocks/MockAToken.sol";
+import {MockUSD} from "../../src/mocks/MockUSD.sol";
 import {MockTBillVault} from "../../src/adapters/MockTBillVault.sol";
 import {MockCreditVault} from "../../src/adapters/MockCreditVault.sol";
 
@@ -26,7 +26,7 @@ contract Handler is Test {
     ManagerGateway gw;
     Governance gov;
     NavOracle oracle;
-    MockAToken aToken;
+    MockUSD usd;
     MockTBillVault tbill;
     MockCreditVault credit;
     address manager;
@@ -34,7 +34,7 @@ contract Handler is Test {
     address[] public actors;
     address[3] adapters;
     address public evil = makeAddr("evilAdapter");
-    address public stranger = makeAddr("unverifiedPayee");
+    address public payee = makeAddr("outsidePayee"); // a member may redeem to any address
 
     // Ghosts: each stays false unless an invariant is broken.
     bool public bandViolation; // 2
@@ -50,7 +50,7 @@ contract Handler is Test {
         ManagerGateway gw_,
         Governance gov_,
         NavOracle oracle_,
-        MockAToken aToken_,
+        MockUSD usd_,
         address[3] memory adapters_,
         address manager_,
         address fallbackWriter_,
@@ -61,7 +61,7 @@ contract Handler is Test {
         gw = gw_;
         gov = gov_;
         oracle = oracle_;
-        aToken = aToken_;
+        usd = usd_;
         adapters = adapters_;
         tbill = MockTBillVault(adapters_[0]);
         credit = MockCreditVault(adapters_[1]);
@@ -79,12 +79,12 @@ contract Handler is Test {
         try plenum.contribute(amount) {} catch {}
     }
 
-    function redeem(uint256 who, uint256 frac, bool toStranger) external {
+    function redeem(uint256 who, uint256 frac, bool toPayee) external {
         address a = actors[who % actors.length];
         uint256 units = plenum.unitsOf(a) * bound(frac, 1, 100) / 100;
         if (units == 0) return;
         vm.prank(a);
-        try plenum.redeem(units, toStranger ? stranger : a) {} catch {}
+        try plenum.redeem(units, toPayee ? payee : a) {} catch {}
     }
 
     /// Invariant 7: contribute then immediately redeem at an unchanged NAV never returns more.
@@ -169,12 +169,12 @@ contract Handler is Test {
 
     function drift(bool useCredit, uint256 amount) external {
         amount = bound(amount, 1, 2_000 * USD);
-        aToken.mint(address(this), amount);
+        usd.mint(address(this), amount);
         if (useCredit) {
-            aToken.approve(address(credit), amount);
+            usd.approve(address(credit), amount);
             credit.accrue(address(plenum), amount);
         } else {
-            aToken.approve(address(tbill), amount);
+            usd.approve(address(tbill), amount);
             tbill.accrue(amount);
         }
     }
@@ -261,14 +261,13 @@ abstract contract InvariantSetup is Fixture {
             ManagerGateway(gateway),
             Governance(governance),
             oracle,
-            aToken,
+            usd,
             [address(tbill), address(credit), address(gold)],
             manager,
             fallbackWriter,
             actors
         );
-        aToken.grantRole(aToken.MINTER_ROLE(), address(handler));
-        _verify(address(handler));
+        usd.grantRole(usd.MINTER_ROLE(), address(handler));
         targetContract(address(handler));
     }
 }
@@ -293,11 +292,10 @@ contract PlenumInvariants is InvariantSetup {
         assertFalse(handler.managerReducedUnits());
     }
 
-    /// 4. A-Token leaves Plenum only to an allowlisted adapter or a verified address.
-    function invariant_4_noValueToUnverifiedOrUnknown() public view {
-        assertEq(aToken.balanceOf(handler.evil()), 0);
-        assertEq(aToken.balanceOf(handler.stranger()), 0);
-        assertEq(aToken.balanceOf(manager), 0);
+    /// 4. The settlement asset never reaches an unknown adapter or the manager (SPEC A25).
+    function invariant_4_noValueToUnknownOrManager() public view {
+        assertEq(usd.balanceOf(handler.evil()), 0);
+        assertEq(usd.balanceOf(manager), 0);
     }
 
     /// 5. NAV report timestamps strictly increase.

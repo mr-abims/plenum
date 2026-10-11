@@ -22,8 +22,8 @@ interface IGovernance {
     /// @notice Approve a proposal (one onchain tx per member, signed with their passkey account). Members only.
     function approve(uint256 proposalId) external;
 
-    /// @notice Execute a proposal that reached quorum within its window. Re-checks allowlist, NAV freshness and
-    ///         compliance (amendment A2). Anyone may call.
+    /// @notice Execute a proposal that reached quorum within its window. Re-checks the allowlist and NAV freshness
+    ///         (amendment A2). Anyone may call.
     function executeProposal(uint256 proposalId) external;
 
     /// @notice Cast a pause vote; the manager is paused once `pauseQuorum` members have voted. Members only.

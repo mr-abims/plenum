@@ -19,7 +19,7 @@ import { after, previewReason } from "@/lib/rulePreview";
 /** Stand-in for "an outside address": any address the group never approved. */
 const OUTSIDE: Addr = "0x000000000000000000000000000000000000dEaD";
 const OP = { buy: 0, sell: 1, requestRedeem: 2 } as const;
-const forcedCall = EVIDENCE.find((e) => e.hash.startsWith("0x42254307"));
+const forcedCall = EVIDENCE.find((e) => e.tone === "bad");
 
 type Verdict = { key: string; reason: string; block: bigint };
 

@@ -3,7 +3,7 @@ import { indexer } from "envio";
 /** Reason enum order from contracts/src/interfaces/Types.sol. */
 const REASONS = [
   "OK", "ADAPTER_NOT_ALLOWED", "WEIGHT_OUT_OF_BAND", "LIQUIDITY_FLOOR", "TRADE_TOO_LARGE", "TURNOVER_CAP",
-  "NAV_STALE", "COOLDOWN", "PAUSED", "PAYEE_NOT_VERIFIED", "MEMBER_NOT_VERIFIED", "JURISDICTION_BLOCKED", "MEMBER_CAP",
+  "NAV_STALE", "COOLDOWN", "PAUSED", "MEMBER_CAP",
 ] as const;
 const OPS = ["Deposit", "Withdraw", "RequestRedeem", "Claim"] as const;
 const NAV_SOURCES = ["CRE", "FALLBACK"] as const;
@@ -14,7 +14,7 @@ const eid = (e: { chainId: number; transaction: { hash: string }; logIndex: numb
   `${e.chainId}-${e.transaction.hash}-${e.logIndex}`;
 
 type ActivityKind =
-  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "REFUSED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
+  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
   | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER";
 
 function activity(
@@ -110,20 +110,6 @@ indexer.onEvent({ contract: "Plenum", event: "Redeemed" }, async ({ event, conte
   const p = await context.Plenum.get(plenum);
   if (p) context.Plenum.set({ ...p, totalUnits: p.totalUnits - units });
   activity(context, event, plenum, "REDEEMED", member, `paid to ${lc(to)}`, assets);
-});
-
-indexer.onEvent({ contract: "Plenum", event: "ComplianceRefused" }, async ({ event, context }) => {
-  const plenum = lc(event.srcAddress);
-  const r = reason(event.params.reason);
-  context.ComplianceRefusal.set({
-    id: eid(event),
-    plenum_id: plenum,
-    account: lc(event.params.account),
-    reason: r,
-    txHash: event.transaction.hash,
-    timestamp: BigInt(event.block.timestamp),
-  });
-  activity(context, event, plenum, "REFUSED", event.params.account, r);
 });
 
 indexer.onEvent({ contract: "Plenum", event: "ActionExecuted" }, async ({ event, context }) => {

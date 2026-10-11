@@ -155,7 +155,7 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
     const ok =
       mode === "in"
         ? await tx.run([
-            { label: `Allow the group to receive ${money(a)}`, run: (sent) => send(session.account, { address: DEPLOYMENT.aToken, abi: erc20Abi, functionName: "approve", args: [p.address, a] }, sent) },
+            { label: `Allow the group to receive ${money(a)}`, run: (sent) => send(session.account, { address: DEPLOYMENT.asset, abi: erc20Abi, functionName: "approve", args: [p.address, a] }, sent) },
             { label: `Contribute ${money(a)}`, run: (sent) => send(session.account, { address: p.address, abi: plenumAbi, functionName: "contribute", args: [a] }, sent) },
           ])
         : await tx.run([
@@ -205,7 +205,7 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
         hint={
           mode === "in"
             ? `In your account: ${money(position.balance)}${profile.currency !== "USD" && assets ? ` · about ${money(assets, profile.currency, rate)}` : ""}`
-            : `Your share is worth ${money(position.value)}. Paid from the group's cash, only to your verified account.`
+            : `Your share is worth ${money(position.value)}. Paid from the group's cash to your account.`
         }
       >
         <div className="relative">
@@ -242,7 +242,7 @@ function LatestFromManager({ plenum }: { plenum: Address }) {
   useEffect(() => {
     if (!p) return;
     loadFeed(p)
-      .then((f) => setItems(f.filter((i) => ["MANAGER_ACTION", "ESCALATED", "NAV", "PAUSED", "UNPAUSED", "REFUSED"].includes(i.kind)).slice(0, 4)))
+      .then((f) => setItems(f.filter((i) => ["MANAGER_ACTION", "ESCALATED", "NAV", "PAUSED", "UNPAUSED"].includes(i.kind)).slice(0, 4)))
       .catch(() => setItems([]));
   }, [p?.total, p?.nav.timestamp]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -266,7 +266,7 @@ function LatestFromManager({ plenum }: { plenum: Address }) {
         <ol className="mt-5 space-y-1">
           {items.map((i) => (
             <li key={i.id} className="flex gap-3 rounded-xl p-2 transition hover:bg-well">
-              <span className={`mt-1.5 size-2 shrink-0 rounded-full ${i.kind === "MANAGER_ACTION" && i.detail === "OK" ? "bg-accent" : i.kind === "NAV" ? "bg-info" : i.kind === "PAUSED" || i.kind === "REFUSED" ? "bg-bad" : "bg-warn"}`} />
+              <span className={`mt-1.5 size-2 shrink-0 rounded-full ${i.kind === "MANAGER_ACTION" && i.detail === "OK" ? "bg-accent" : i.kind === "NAV" ? "bg-info" : i.kind === "PAUSED" ? "bg-bad" : "bg-warn"}`} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{feedTitle(i)}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -314,10 +314,10 @@ function InvitePanel({ plenum, highlight }: { plenum: Address; highlight: boolea
             <LinkSimple size={22} />
           </span>
           <h2 className="mt-4 font-display text-2xl font-semibold tracking-[-0.02em]">Invite a member</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">The link works once and expires in 7 days. Only verified people can use it, and it's signed by you.</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">The link works once and expires in 7 days, and it's signed by you.</p>
         </div>
         <div className="space-y-4">
-          <Field label="Their account ID (optional)" hint="Leave empty for a link anyone verified can use once." error={invitee !== "" && !isAddress(invitee) ? "That isn't a valid account ID." : undefined}>
+          <Field label="Their account ID (optional)" hint="Leave empty for a link anyone can use once." error={invitee !== "" && !isAddress(invitee) ? "That isn't a valid account ID." : undefined}>
             <input className={`${inputClass} font-mono text-sm!`} value={invitee} onChange={(e) => setInvitee(e.target.value.trim())} placeholder="0x…" />
           </Field>
           <Button variant="secondary" busy={busy} disabled={invitee !== "" && !isAddress(invitee)} onClick={make}>

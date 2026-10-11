@@ -1,13 +1,11 @@
 import type { Address } from "viem";
 import {
-  complianceGateAbi,
   governanceAbi,
   iAssetAdapterAbi,
   managerGatewayAbi,
   mandateAbi,
   navOracleAbi,
   plenumAbi,
-  REASONS,
   OPS,
 } from "@plenum/abis";
 import { publicClient } from "./chain";
@@ -15,7 +13,7 @@ import { adapterName, DEPLOYMENT } from "./config";
 
 const BPS = 10_000n;
 export const UNIT = 10n ** 12n; // units have 12 decimals
-export const USD = 10n ** 6n; // A-Token has 6 decimals
+export const USD = 10n ** 6n; // the settlement asset (MOCK test dollar) has 6 decimals
 
 export interface Sleeve {
   adapter: Address;
@@ -155,25 +153,18 @@ export interface MemberPosition {
   /** Value of the member's units at V = holdings total (indicative between NAV reports). */
   value: bigint;
   shareBps: number;
-  verified: boolean;
-  balance: bigint; // mvUSD in wallet
+  balance: bigint; // test dollars in wallet
 }
 
 export async function loadPosition(p: PlenumState, member: Address): Promise<MemberPosition> {
-  const [isMember, units, check, balance] = await Promise.all([
+  const [isMember, units, balance] = await Promise.all([
     read<boolean>(p.address, plenumAbi, "isMember", [member]),
     read<bigint>(p.address, plenumAbi, "unitsOf", [member]),
-    read<number>(DEPLOYMENT.complianceGate, complianceGateAbi, "checkMember", [member]),
-    read<bigint>(DEPLOYMENT.aToken, [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] }], "balanceOf", [member]),
+    read<bigint>(DEPLOYMENT.asset, [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] }], "balanceOf", [member]),
   ]);
   const value = p.totalUnits === 0n ? 0n : (units * p.total) / p.totalUnits;
   const shareBps = p.totalUnits === 0n ? 0 : Number((units * BPS) / p.totalUnits);
-  return { isMember, units, value, shareBps, verified: REASONS[check] === "OK", balance };
-}
-
-export async function isVerified(member: Address): Promise<boolean> {
-  const r = await read<number>(DEPLOYMENT.complianceGate, complianceGateAbi, "checkMember", [member]);
-  return REASONS[r] === "OK";
+  return { isMember, units, value, shareBps, balance };
 }
 
 export interface ProposalView {

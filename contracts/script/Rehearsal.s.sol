@@ -7,13 +7,13 @@ import {Plenum} from "../src/core/Plenum.sol";
 import {Governance} from "../src/core/Governance.sol";
 import {NavOracle} from "../src/core/NavOracle.sol";
 import {PlenumFactory} from "../src/core/PlenumFactory.sol";
-import {MockAToken} from "../src/mocks/MockAToken.sol";
+import {MockUSD} from "../src/mocks/MockUSD.sol";
 import {Templates} from "./Templates.sol";
 
 /// @notice Rehearsal plenum for the agent and CRE before the app exists: the deployer organises a Balanced plenum
 ///         (demo timing), joins, contributes, and the members (just the deployer) approve the initial allocation
 ///         as a governance proposal. A FALLBACK NAV is posted so execution can proceed; CRE takes over afterwards.
-/// @dev Env: DEPLOYER_PRIVATE_KEY, FALLBACK_NAV_WRITER_KEY, MANAGER_OPERATOR_KEY, REHEARSAL_MVUSD (default 10000).
+/// @dev Env: DEPLOYER_PRIVATE_KEY, FALLBACK_NAV_WRITER_KEY, MANAGER_OPERATOR_KEY, REHEARSAL_USD (default 10000).
 contract Rehearsal is Script {
     uint256 constant ANVIL_KEY_0 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
     uint256 constant ANVIL_KEY_1 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
@@ -23,7 +23,7 @@ contract Rehearsal is Script {
         string path;
         PlenumFactory factory;
         NavOracle oracle;
-        MockAToken aToken;
+        MockUSD usd;
         address tbill;
         address credit;
         address gold;
@@ -64,12 +64,12 @@ contract Rehearsal is Script {
         string memory json = vm.readFile(c.path);
         c.factory = PlenumFactory(vm.parseJsonAddress(json, ".factory"));
         c.oracle = NavOracle(vm.parseJsonAddress(json, ".navOracle"));
-        c.aToken = MockAToken(vm.parseJsonAddress(json, ".aToken"));
+        c.usd = MockUSD(vm.parseJsonAddress(json, ".asset"));
         c.tbill = vm.parseJsonAddress(json, ".tbillVault");
         c.credit = vm.parseJsonAddress(json, ".creditVault");
         c.gold = vm.parseJsonAddress(json, ".gold");
         c.pk = vm.envOr("DEPLOYER_PRIVATE_KEY", ANVIL_KEY_0);
-        c.total = vm.envOr("REHEARSAL_MVUSD", uint256(10_000)) * 1e6;
+        c.total = vm.envOr("REHEARSAL_USD", uint256(10_000)) * 1e6;
     }
 
     function _createJoinContribute(Ctx memory c) internal returns (Plenum plenum) {
@@ -88,8 +88,8 @@ contract Rehearsal is Script {
         uint64 expiry = uint64(block.timestamp + 1 days);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(c.pk, plenum.inviteDigest(organizer, 1, expiry));
         plenum.join(abi.encode(organizer, uint256(1), expiry, abi.encodePacked(r, s, v)), bytes32(0));
-        c.aToken.mint(organizer, c.total);
-        c.aToken.approve(address(plenum), c.total);
+        c.usd.mint(organizer, c.total);
+        c.usd.approve(address(plenum), c.total);
         plenum.contribute(c.total);
         vm.stopBroadcast();
     }

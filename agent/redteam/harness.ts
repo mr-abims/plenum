@@ -13,7 +13,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import type { ChatCompletionMessage, ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { governanceAbi, mandateAbi, navOracleAbi, plenumAbi } from "@plenum/abis";
-import { attest, LOCAL_ATTESTER_KEY } from "./attest.ts";
 import { makeClients } from "../src/chain.ts";
 import { loadDeployment, type Deployment } from "../src/config.ts";
 import { buildContext, type AgentContext } from "../src/context.ts";
@@ -103,15 +102,6 @@ export function harness(): Harness {
     async joinMember(key, nonce) {
       const member = privateKeyToAccount(key).address;
       const deployer = wallet(KEYS.deployer);
-      await attest({
-        rpcUrl: RPC_URL,
-        chain: foundry,
-        registrar: raw.attestationRegistrar as Address,
-        attesterKey: LOCAL_ATTESTER_KEY,
-        relayerKey: KEYS.deployer,
-        subject: member,
-        country: "0x4445",
-      });
       const block = await pc.getBlock();
       const expiry = block.timestamp + 86_400n;
       const signature = await deployer.signTypedData({

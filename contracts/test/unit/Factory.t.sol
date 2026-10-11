@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Fixture} from "../utils/Fixture.sol";
-import {PolicyViolation, Reason} from "../../src/interfaces/Types.sol";
+import {PlenumFactory} from "../../src/core/PlenumFactory.sol";
 import {Plenum} from "../../src/core/Plenum.sol";
 import {Mandate} from "../../src/core/Mandate.sol";
 import {ManagerGateway} from "../../src/core/ManagerGateway.sol";
@@ -11,18 +11,23 @@ import {ManagerGateway} from "../../src/core/ManagerGateway.sol";
 contract FactoryTest is Fixture {
     function test_bundleIsWired() public view {
         assertEq(plenum.organizer(), ana);
-        assertEq(plenum.aToken(), address(aToken));
+        assertEq(plenum.asset(), address(usd));
+        assertEq(factory.asset(), address(usd));
         assertEq(mandate.plenum(), address(plenum));
         assertEq(ManagerGateway(gateway).manager(), manager);
         assertEq(ManagerGateway(gateway).plenum(), address(plenum));
-        assertTrue(aToken.registered(address(plenum)));
         assertTrue(mandate.isAllowed(address(tbill)));
     }
 
-    function test_unverifiedCannotCreate() public {
+    function test_anyoneCanStartAGroup() public {
         vm.prank(stranger);
-        vm.expectRevert(abi.encodeWithSelector(PolicyViolation.selector, Reason.MEMBER_NOT_VERIFIED));
-        factory.createPlenum("Nope", 1, balanced(), manager);
+        Plenum own = Plenum(factory.createPlenum("Solo", 1, balanced(), manager));
+        assertEq(own.organizer(), stranger);
+    }
+
+    function test_zeroManagerRejected() public {
+        vm.expectRevert(PlenumFactory.ZeroManager.selector);
+        factory.createPlenum("Nope", 1, balanced(), address(0));
     }
 
     function test_clonesCannotBeReinitialized() public {

@@ -23,7 +23,7 @@ contract UnitMathFuzz is Fixture {
         plenum.contribute(seed);
         _postNav(nav);
         // Make sure redemptions can be paid from cash whatever the reported NAV says.
-        aToken.mint(address(plenum), 2e15 * USD);
+        usd.mint(address(plenum), 2e15 * USD);
 
         vm.startPrank(jonas);
         uint256 units;
@@ -46,7 +46,7 @@ contract UnitMathFuzz is Fixture {
 
         vm.prank(ana);
         uint256 attackerUnits = plenum.contribute(1);
-        aToken.mint(address(plenum), donation); // attacker "donates" cash
+        usd.mint(address(plenum), donation); // attacker "donates" cash
         _postNav(donation + 1); // honest administrator prices the donation in
 
         vm.prank(jonas);

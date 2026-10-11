@@ -38,7 +38,7 @@ export interface Observation {
   consentedMembers: { member: Address; grantId: string; expiresAt: number }[];
 }
 
-/** Reads everything the manager is allowed to see onchain. All amounts are A-Token base units (6 decimals). */
+/** Reads everything the manager is allowed to see onchain. All amounts are settlement-asset base units (6 decimals, MOCK test dollars). */
 export async function observe(ctx: AgentContext): Promise<Observation> {
   const pc = ctx.clients.publicClient;
   const block = await pc.getBlock();

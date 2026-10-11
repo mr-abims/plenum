@@ -26,9 +26,6 @@ describe("classify (SPEC A6)", () => {
       NAV_STALE: "drop",
       COOLDOWN: "wait",
       PAUSED: "drop",
-      PAYEE_NOT_VERIFIED: "drop",
-      MEMBER_NOT_VERIFIED: "drop",
-      JURISDICTION_BLOCKED: "drop",
       MEMBER_CAP: "drop",
     });
   });

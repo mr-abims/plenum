@@ -12,7 +12,7 @@ import { EVIDENCE, EVIDENCE_EXPLORER } from "@/lib/evidence";
 
 const FLOW = [
   { icon: UsersThree, title: "Start a group", body: "Pick Conservative, Balanced or Liquidity-first. The template becomes your mandate, written into a contract. Investing alone? A personal portfolio runs on the same rules." },
-  { icon: LinkSimple, title: "Invite verified people", body: "Send a single-use link. Only people who passed the identity check can join or move money." },
+  { icon: LinkSimple, title: "Invite people you trust", body: "Send a single-use link signed by you. Only someone holding a member's invite can join." },
   { icon: HandCoins, title: "Contribute", body: "Put money in and receive units at the latest independent price. See it in your own currency." },
   { icon: Robot, title: "Let the manager work", body: "It rebalances inside the rules and explains every move with a fingerprint of its reasoning onchain." },
   { icon: Gavel, title: "Stay in charge", body: "Approve the bigger moves with your passkey. Pause the manager at any time. Share your data only when you choose." },
@@ -156,7 +156,7 @@ export default async function Landing() {
         <div className="space-y-2">
           <p className="font-medium text-ink">Built with</p>
           <ul className="space-y-1 font-mono text-xs">
-            {["Monad", "Chainlink CRE", "Envio HyperIndex", "Qwen 3.8 Max", "Mera passkeys", "Cleanverse attestations (MOCK signer)"].map((s) => (
+            {["Monad", "Chainlink CRE", "Envio HyperIndex", "Qwen 3.8 Max", "Mera passkeys", "ERC-8004 agent identity"].map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>

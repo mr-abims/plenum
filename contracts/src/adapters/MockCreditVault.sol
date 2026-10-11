@@ -38,8 +38,8 @@ contract MockCreditVault is IAssetAdapter, ReentrancyGuard {
     error NotRequestOwner(uint256 requestId);
     error NotClaimableYet(uint256 requestId, uint64 claimableAt);
 
-    constructor(address aToken, uint32 redeemDelay_) {
-        asset = aToken;
+    constructor(address asset_, uint32 redeemDelay_) {
+        asset = asset_;
         redeemDelay = redeemDelay_;
     }
 

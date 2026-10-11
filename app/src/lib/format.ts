@@ -1,6 +1,6 @@
 import { USD } from "./plenum";
 
-/** "R$ 1.234,56" style formatting in the member's currency from an A-Token (USD, 6 dp) amount. */
+/** "R$ 1.234,56" style formatting in the member's currency from a settlement-asset (USD, 6 dp) amount. */
 export function money(amount: bigint, currency = "USD", rate = 1, locale?: string): string {
   const usd = Number(amount) / Number(USD);
   return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 2 }).format(usd * rate);
@@ -23,7 +23,7 @@ export function inTimeZone(unixSeconds: number, timeZone?: string): string {
 
 export const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
-/** Parses "1,234.56" into A-Token base units. */
+/** Parses "1,234.56" into settlement-asset base units. */
 export function parseUsd(input: string): bigint {
   const clean = input.replace(/[, ]/g, "");
   if (!/^\d+(\.\d{0,6})?$/.test(clean)) throw new Error("Enter an amount like 250 or 99.50");
