@@ -5,6 +5,7 @@ import {
   iAssetAdapterAbi,
   managerGatewayAbi,
   mandateAbi,
+  mandateV1Abi,
   mockCreditVaultAbi,
   navOracleAbi,
   plenumAbi,
@@ -34,6 +35,18 @@ export interface Observation {
   cooldownRemainingSeconds: number;
   pendingRedemptions: { requestId: string; assets: string; claimableNow: boolean }[];
   openProposals: number;
+  /** False once members have voted in a different manager key; this runtime then stops (SPEC A26). */
+  isCurrentManager: boolean;
+  /** Investment period and breaking fee (SPEC A26). Groups from the first factory have no period (all zero). */
+  rules: {
+    periodLengthSeconds: number;
+    exitWindowSeconds: number;
+    earlyExitFeeBps: number;
+    exitFeeNowBps: number;
+    nextPeriodEnd: number;
+    /** When a rule change the members passed takes effect (0 = none pending). Exits are free until then. */
+    pendingRuleChangeEta: number;
+  };
   /** Members with an active consent grant to this manager (use with get_member_context). */
   consentedMembers: { member: Address; grantId: string; expiresAt: number }[];
 }
@@ -44,8 +57,8 @@ export async function observe(ctx: AgentContext): Promise<Observation> {
   const block = await pc.getBlock();
   const now = Number(block.timestamp);
 
-  const [config, report, cash, paused, lastExecution, turnoverDay, turnoverToday, proposalCount] = await Promise.all([
-    pc.readContract({ address: ctx.mandate, abi: mandateAbi, functionName: "config" }),
+  const [{ config, v2 }, report, cash, paused, lastExecution, turnoverDay, turnoverToday, proposalCount, currentManager] = await Promise.all([
+    readConfig(ctx),
     pc.readContract({ address: ctx.navOracle, abi: navOracleAbi, functionName: "latest", args: [ctx.plenum] }),
     pc.readContract({ address: ctx.plenum, abi: plenumAbi, functionName: "cash" }),
     pc.readContract({ address: ctx.governance, abi: governanceAbi, functionName: "paused" }),
@@ -53,7 +66,15 @@ export async function observe(ctx: AgentContext): Promise<Observation> {
     pc.readContract({ address: ctx.gateway, abi: managerGatewayAbi, functionName: "turnoverDay" }),
     pc.readContract({ address: ctx.gateway, abi: managerGatewayAbi, functionName: "turnoverToday" }),
     pc.readContract({ address: ctx.governance, abi: governanceAbi, functionName: "proposalCount" }),
+    pc.readContract({ address: ctx.gateway, abi: managerGatewayAbi, functionName: "manager" }),
   ]);
+  const [exitFeeNowBps, nextPeriodEnd, pending] = v2
+    ? await Promise.all([
+        pc.readContract({ address: ctx.mandate, abi: mandateAbi, functionName: "exitFeeBps" }),
+        pc.readContract({ address: ctx.mandate, abi: mandateAbi, functionName: "nextPeriodEnd" }),
+        pc.readContract({ address: ctx.mandate, abi: mandateAbi, functionName: "pendingChange" }),
+      ])
+    : [0, 0n, undefined];
 
   const raw = await Promise.all(
     config.adapters.map(async (adapter) => {
@@ -113,8 +134,28 @@ export async function observe(ctx: AgentContext): Promise<Observation> {
     cooldownRemainingSeconds: Math.max(0, cooldownEnds - now),
     pendingRedemptions: await pendingRedemptions(ctx),
     openProposals: Number(proposalCount),
+    isCurrentManager: currentManager.toLowerCase() === ctx.clients.account.address.toLowerCase(),
+    rules: {
+      periodLengthSeconds: config.periodLength,
+      exitWindowSeconds: config.exitWindow,
+      earlyExitFeeBps: config.earlyExitFeeBps,
+      exitFeeNowBps: Number(exitFeeNowBps),
+      nextPeriodEnd: Number(nextPeriodEnd),
+      pendingRuleChangeEta: pending ? Number(pending[1]) : 0,
+    },
     consentedMembers: await consentedMembers(ctx),
   };
+}
+
+/** Mandate.config() from either factory generation; first-generation groups have no period or breaking fee. */
+async function readConfig(ctx: AgentContext) {
+  const pc = ctx.clients.publicClient;
+  try {
+    return { config: await pc.readContract({ address: ctx.mandate, abi: mandateAbi, functionName: "config" }), v2: true };
+  } catch {
+    const c = await pc.readContract({ address: ctx.mandate, abi: mandateV1Abi, functionName: "config" });
+    return { config: { ...c, periodLength: 0, exitWindow: 0, earlyExitFeeBps: 0 }, v2: false };
+  }
 }
 
 /** Active consent grants from this plenum's members to the manager, read from contract state (no log scans). */

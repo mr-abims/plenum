@@ -7,7 +7,7 @@ import { callTool, TOOL_DEFINITIONS, type WriteOutcome } from "./tools.ts";
 export const MAX_STEPS = 8;
 
 export type RunResult =
-  | { status: "paused" | "nav_stale"; observation: Observation; modelCalls: 0 }
+  | { status: "paused" | "nav_stale" | "replaced"; observation: Observation; modelCalls: 0 }
   | { status: "hold" | "step_limit"; note?: string; modelCalls: number; trace: TraceEntry[] }
   | ({ modelCalls: number; trace: TraceEntry[] } & WriteOutcome);
 
@@ -21,6 +21,8 @@ export interface TraceEntry {
 /** One observe → plan → simulate → classify → act → explain cycle (SPEC §8). At most one write per run. */
 export async function runOnce(ctx: AgentContext): Promise<RunResult> {
   const observation = await observe(ctx);
+  // Members voted in a different manager key: this runtime has no authority left (SPEC A26).
+  if (!observation.isCurrentManager) return { status: "replaced", observation, modelCalls: 0 };
   if (observation.paused) return { status: "paused", observation, modelCalls: 0 };
   if (!observation.nav.fresh) return { status: "nav_stale", observation, modelCalls: 0 }; // RT-3
 

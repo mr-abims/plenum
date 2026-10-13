@@ -11,10 +11,21 @@
   "tbillVault": "0x8BAccF02b17e87F0d9DBfcF82FebC6a5C8d9c90A",
   "creditVault": "0xEC02e595cBb542B82C57C7f2431b71da09BCDA50",
   "gold": "0x688AFfb0CdF16146BadAFfffC2431F28b9E45E85",
-  "factory": "0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649",
+  "factory": "0x5BC78c3784Fda7C15b6D586B9d21CA02De760E8D",
   "managerAgentId": 2128,
   "managerAgentTx": "0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503",
   "rehearsalPlenum": "0xE66A3b31097c733499029AaAcb84F23231B0aaDb",
   "showcasePlenum": "0x92b7F27235622418B254C9B50b6B90aB330936BC",
-  "personalPlenum": "0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A"
+  "personalPlenum": "0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A",
+  "factoryV1": "0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649",
+  "factoryV1StartBlock": 70007847,
+  "factoryV2StartBlock": 70767562,
+  "treasury": "0x5d737A911fb2d404F019ea940Db14fB99a795699",
+  "protocolFeeCutBps": 2500,
+  "v2Impls": {
+    "plenum": "0x98c6a8495267E76ff7885714103CB917A081A206",
+    "mandate": "0xB71D4AD667F9c95B1Ad2B6c6F0CAC6AC66aA5a70",
+    "governance": "0x1f25Eac1722ed7b3861063919814F88d751249bb",
+    "gateway": "0x84Cd433Bc39B36E700B298b5FF874f386c100386"
+  }
 }

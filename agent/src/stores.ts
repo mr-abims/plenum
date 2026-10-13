@@ -21,10 +21,7 @@ export interface MemoStore {
   save(hash: string, memo: Memo): Promise<void>;
 }
 
-/**
- * TODO(data room): memos must be encrypted to every member's X25519 key and stored in R2 (SPEC §10).
- * Until @plenum/crypto lands this writes plaintext JSON to a local, gitignored directory.
- */
+/** Local development store: plaintext JSON in a gitignored directory. Live runs use BlobMemoStore (encrypted). */
 export class FileMemoStore implements MemoStore {
   constructor(private readonly dir: string) {
     mkdirSync(dir, { recursive: true });
@@ -40,10 +37,7 @@ export interface MemberContextSource {
   get(member: string): Promise<string | undefined>;
 }
 
-/**
- * TODO(data room): replace with HPKE unwrap of the member's consent-wrapped document key (SPEC §10).
- * Until then, reads `<dir>/<member>.txt` as the already-decrypted summary.
- */
+/** Local development source: reads `<dir>/<member>.txt` as an already-decrypted summary. Live runs use BlobMemberContext. */
 export class FileMemberContext implements MemberContextSource {
   constructor(private readonly dir: string) {}
 

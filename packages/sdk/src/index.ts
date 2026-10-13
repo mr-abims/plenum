@@ -21,7 +21,7 @@ import {
   type Hex,
   type PublicClient,
 } from "viem";
-import { managerGatewayAbi, OPS, plenumAbi, plenumFactoryAbi, REASONS, type OpName, type Reason } from "@plenum/abis";
+import { managerGatewayAbi, mandateAbi, mandateV1Abi, OPS, plenumAbi, plenumFactoryAbi, REASONS, type OpName, type Reason } from "@plenum/abis";
 import { canonicalJson } from "@plenum/crypto";
 
 export { OPS, REASONS, type OpName, type Reason };
@@ -132,9 +132,11 @@ const CLONE = /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5b
 
 /**
  * Decodes the `ManagerAction` in `txHash` and proves its origin from chain state alone (no indexer, no server):
- * the emitting gateway's bytecode must be a clone of `factory.gatewayImpl()`, and its plenum must point back to it.
+ * the emitting gateway's bytecode must be a clone of `gatewayImpl()` of one of `factories` (pass every Plenum factory
+ * generation), and its plenum must point back to it.
  */
-export async function verifyAction(client: PublicClient, factory: Address, txHash: Hash): Promise<VerifiedAction> {
+export async function verifyAction(client: PublicClient, factories: Address | readonly Address[], txHash: Hash): Promise<VerifiedAction> {
+  const list = typeof factories === "string" ? [factories] : factories;
   const receipt = await client.getTransactionReceipt({ hash: txHash });
   for (const log of receipt.logs) {
     let ev;
@@ -146,11 +148,11 @@ export async function verifyAction(client: PublicClient, factory: Address, txHas
     if (ev.eventName !== "ManagerAction") continue;
     const a = ev.args as { actionsHash: Hash; rationaleHash: Hash; modelId: Hex; reason: number };
     const gateway = log.address;
-    const [plenum, manager, code, impl, block] = await Promise.all([
+    const [plenum, manager, code, impls, block] = await Promise.all([
       client.readContract({ address: gateway, abi: managerGatewayAbi, functionName: "plenum" }),
       client.readContract({ address: gateway, abi: managerGatewayAbi, functionName: "manager" }),
       client.getCode({ address: gateway }),
-      client.readContract({ address: factory, abi: plenumFactoryAbi, functionName: "gatewayImpl" }),
+      Promise.all(list.map((f) => client.readContract({ address: f, abi: plenumFactoryAbi, functionName: "gatewayImpl" }))),
       client.getBlock({ blockNumber: receipt.blockNumber }),
     ]);
     const [groupName, backLink] = await Promise.all([
@@ -170,7 +172,7 @@ export async function verifyAction(client: PublicClient, factory: Address, txHas
       reason: REASONS[a.reason] ?? "ADAPTER_NOT_ALLOWED",
       block: receipt.blockNumber,
       timestamp: Number(block.timestamp),
-      factoryClone: !!cloneOf && `0x${cloneOf}`.toLowerCase() === impl.toLowerCase(),
+      factoryClone: !!cloneOf && impls.some((impl) => `0x${cloneOf}`.toLowerCase() === impl.toLowerCase()),
       linked: backLink.toLowerCase() === gateway.toLowerCase(),
     };
   }
@@ -194,4 +196,39 @@ export function checkMemo(memo: { actions?: { adapter: string; op: string; asset
 
 function decodeModelId(hex: Hex): string {
   return hexToString(hex, { size: 32 }).replace(/\0+$/, "");
+}
+
+/** A group's rules. Groups from the first factory (before SPEC A26) have no investment period: those fields read 0. */
+export type MandateConfig = {
+  adapters: readonly Address[];
+  targetBps: readonly number[];
+  bandBps: readonly number[];
+  minLiquidityBps: number;
+  maxTradeBps: number;
+  maxDailyTurnoverBps: number;
+  navMaxAge: number;
+  cooldown: number;
+  maxMembers: number;
+  escalateQuorumBps: number;
+  mandateChangeBps: number;
+  timelock: number;
+  pauseQuorum: number;
+  votingPeriod: number;
+  periodLength: number;
+  exitWindow: number;
+  earlyExitFeeBps: number;
+};
+
+/**
+ * Reads `Mandate.config()` from either generation. `v2` is false for groups created by the first factory, which
+ * also lack rule changes, periods and the breaking fee.
+ */
+export async function readMandateConfig(client: PublicClient, mandate: Address): Promise<{ config: MandateConfig; v2: boolean }> {
+  try {
+    const c = await client.readContract({ address: mandate, abi: mandateAbi, functionName: "config" });
+    return { config: c as MandateConfig, v2: true };
+  } catch {
+    const c = await client.readContract({ address: mandate, abi: mandateV1Abi, functionName: "config" });
+    return { config: { ...c, periodLength: 0, exitWindow: 0, earlyExitFeeBps: 0 } as MandateConfig, v2: false };
+  }
 }

@@ -16,6 +16,12 @@ for (const name of CONTRACTS) {
   writeFileSync(join(import.meta.dirname, "json", `${name}.json`), JSON.stringify(abi, null, 2) + "\n");
   ts += `export const ${lower(name)}Abi = ${JSON.stringify(abi)} as const;\n\n`;
 }
+// Mandates cloned by the first factory (before SPEC A26) return the shorter MandateConfig; clients decode their
+// config() with this ABI when the current one fails. Vendored from the Oct 11 build.
+{
+  const abi = JSON.parse(readFileSync(join(import.meta.dirname, "v1", "Mandate.json"), "utf8"));
+  ts += `export const mandateV1Abi = ${JSON.stringify(abi)} as const;\n\n`;
+}
 // ERC-8004 registries are not ours: official ABIs vendored from github.com/erc-8004/erc-8004-contracts (abis/),
 // checked against the selectors deployed on Monad testnet.
 for (const name of ["IdentityRegistry", "ReputationRegistry"]) {

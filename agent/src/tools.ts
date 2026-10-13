@@ -27,7 +27,7 @@ const json = (schema: z.ZodType) => z.toJSONSchema(schema, { target: "draft-7" }
 /** Tool definitions shown to the model. There is deliberately no transfer, approve or arbitrary-call tool. */
 export const TOOL_DEFINITIONS: ChatCompletionTool[] = [
   ["get_portfolio", "Holdings: cash, each sleeve's value, pending redemptions, weights vs targets and bands."],
-  ["get_mandate", "The group's rules: allowed adapters, targets, bands, cash floor, size and turnover caps."],
+  ["get_mandate", "The group's rules: allowed adapters, targets, bands, cash floor, size and turnover caps, investment period, breaking fee and any rule change waiting to apply."],
   ["get_nav", "Latest independent NAV report, its source (CRE or FALLBACK) and age."],
   [
     "get_member_context",
@@ -85,7 +85,7 @@ export async function callTool(ctx: AgentContext, name: string, rawArgs: string)
     case "get_mandate": {
       const o = await observe(ctx);
       const sleeves = o.holdings.sleeves.map(({ name, adapter, targetBps, bandBps }) => ({ name, adapter, targetBps, bandBps }));
-      return { ok: true, content: { sleeves, minLiquidityBps: o.holdings.minLiquidityBps, ...o.limits } };
+      return { ok: true, content: { sleeves, minLiquidityBps: o.holdings.minLiquidityBps, ...o.limits, ...o.rules } };
     }
     case "get_nav": {
       const o = await observe(ctx);
