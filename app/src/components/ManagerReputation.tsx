@@ -50,7 +50,7 @@ export function AgentIdentity({ summary }: { summary: Summary | null }) {
         <span>
           {summary.count === 0
             ? "No ratings from members yet"
-            : `Rated ${Math.round(summary.score)}/100 by ${summary.count} member${summary.count === 1 ? "" : "s"}`}
+            : `Rated ${Math.round(summary.score)}/100 from ${summary.count} member rating${summary.count === 1 ? "" : "s"}`}
         </span>
       ) : null}
     </div>
