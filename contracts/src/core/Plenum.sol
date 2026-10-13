@@ -22,10 +22,14 @@ import {Action, Op, PolicyViolation, Reason, Unauthorized} from "../interfaces/T
 ///      with V = latest NAV + net flows since that report, and V = 0 while U = 0 (bootstrap).
 ///      Invites (SPEC A16): EIP-712 `Invite(invitee, nonce, expiry)` signed by the organizer or any member;
 ///      invitee = address(0) makes an open single-use link, otherwise only that address may use it.
+///      Exits (SPEC A26): outside the free window at each period end an exit pays `Mandate.exitFeeBps()` of its gross
+///      value; `protocolFeeCutBps` of the fee goes to the treasury (all of it when the exit empties the plenum or the
+///      plenum has one member) and the rest stays in the pool, shared pro-rata by the remaining units.
 contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 internal constant OFFSET = 1e6; // 10^δ, δ = 6
+    uint256 internal constant BPS = 10_000;
     uint256 internal constant WHOLE_UNIT = 1e12; // units have 12 decimals
     bytes32 public constant INVITE_TYPEHASH = keccak256("Invite(address invitee,uint256 nonce,uint64 expiry)");
 
@@ -36,6 +40,10 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     address public gateway;
     address public navOracle;
     address public organizer;
+    address public treasury;
+    uint16 public protocolFeeCutBps;
+    /// @notice True once the organizer has left; from then on only current members can sign invites.
+    bool public organizerLeft;
 
     uint256 public override totalUnits;
     uint256 public override memberCount;
@@ -45,6 +53,8 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     mapping(uint256 => bool) public inviteUsed;
     /// @dev Bounded by MandateConfig.maxMembers (≤ 99); never iterated in state-changing code.
     address[] internal _members;
+    /// @dev Position in `_members` plus one (0 = not listed), so leaving is O(1).
+    mapping(address => uint256) internal _memberIndex;
 
     /// @dev NAV race handling (SPEC A8): flows since the last NAV report this plenum has seen.
     uint64 public lastNavTimestamp;
@@ -72,6 +82,8 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         gateway = p.gateway;
         navOracle = p.navOracle;
         organizer = p.organizer;
+        treasury = p.treasury;
+        protocolFeeCutBps = p.protocolFeeCutBps;
     }
 
     /// @inheritdoc IPlenum
@@ -85,7 +97,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         if (inviteUsed[nonce]) revert InviteAlreadyUsed(nonce);
         if (invitee != address(0) && invitee != msg.sender) revert InviteNotForCaller(invitee);
         address signer = ECDSA.recover(inviteDigest(invitee, nonce, expiry), sig);
-        if (signer != organizer && !isMember[signer]) revert InvalidInviteSigner(signer);
+        if (!isMember[signer] && (signer != organizer || organizerLeft)) revert InvalidInviteSigner(signer);
 
         if (memberCount >= IMandate(mandate).maxMembers()) revert PolicyViolation(Reason.MEMBER_CAP);
 
@@ -93,6 +105,7 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
         isMember[msg.sender] = true;
         encPubKeyOf[msg.sender] = encPubKey;
         _members.push(msg.sender);
+        _memberIndex[msg.sender] = _members.length;
         ++memberCount;
         emit MemberJoined(msg.sender, encPubKey);
     }
@@ -124,18 +137,49 @@ contract Plenum is IPlenum, Initializable, EIP712, ReentrancyGuard {
     /// @dev Paid from cash only (a redemption queue is stretch).
     function redeem(uint256 units, address to) external nonReentrant returns (uint256 assets) {
         if (units == 0) revert ZeroAmount();
+        assets = _redeem(units, to);
+    }
+
+    /// @inheritdoc IPlenum
+    function leave(address to) external nonReentrant returns (uint256 assets) {
+        if (!isMember[msg.sender]) revert NotMember(msg.sender);
+        uint256 units = unitsOf[msg.sender];
+        if (units != 0) assets = _redeem(units, to);
+
+        uint256 idx = _memberIndex[msg.sender] - 1;
+        address last = _members[_members.length - 1];
+        _members[idx] = last;
+        _memberIndex[last] = idx + 1;
+        _members.pop();
+        delete _memberIndex[msg.sender];
+        isMember[msg.sender] = false;
+        delete encPubKeyOf[msg.sender];
+        --memberCount;
+        if (msg.sender == organizer) organizerLeft = true;
+        emit MemberLeft(msg.sender);
+    }
+
+    /// @dev Burns `units` of the caller and pays the gross value less the breaking fee. Reverts with no state change
+    ///      if cash can't cover what leaves the plenum (payout plus the treasury's cut).
+    function _redeem(uint256 units, address to) internal returns (uint256 payout) {
         uint256 held = unitsOf[msg.sender];
         if (units > held) revert InsufficientUnits(units, held);
 
         uint256 u = totalUnits;
-        assets = Math.mulDiv(units, _navValue() + 1, u + OFFSET);
-        if (assets > cash()) revert PolicyViolation(Reason.LIQUIDITY_FLOOR);
+        uint256 gross = Math.mulDiv(units, _navValue() + 1, u + OFFSET);
+        uint256 fee = gross * IMandate(mandate).exitFeeBps() / BPS;
+        uint256 toTreasury = (memberCount <= 1 || units == u) ? fee : fee * protocolFeeCutBps / BPS;
+        payout = gross - fee;
+        uint256 leaving = payout + toTreasury;
+        if (leaving > cash()) revert PolicyViolation(Reason.LIQUIDITY_FLOOR);
 
         unitsOf[msg.sender] = held - units;
         totalUnits = u - units;
-        netFlowSince -= SafeCast.toInt256(assets);
-        IERC20(asset).safeTransfer(to, assets);
-        emit Redeemed(msg.sender, units, assets, to);
+        netFlowSince -= SafeCast.toInt256(leaving);
+        IERC20(asset).safeTransfer(to, payout);
+        if (toTreasury != 0) IERC20(asset).safeTransfer(treasury, toTreasury);
+        emit Redeemed(msg.sender, units, payout, to);
+        if (fee != 0) emit ExitFeeCharged(msg.sender, fee, toTreasury);
     }
 
     /// @inheritdoc IPlenum

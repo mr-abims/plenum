@@ -14,4 +14,24 @@ contract HandlerProbe is InvariantSetup {
         assertGt(handler.okExecutions(), 3);
         assertFalse(handler.bandViolation());
     }
+
+    /// The SPEC A26 actions must take effect, or invariants 4 and 8 would pass vacuously.
+    function test_handlerReachesRuleChangesSwapsAndExits() public {
+        handler.changeRules(500, 1 days);
+        assertEq(mandate.config().earlyExitFeeBps, 500);
+
+        handler.replaceManager();
+        assertEq(handler.manager(), handler.manager2());
+        handler.replaceManager();
+        assertEq(handler.manager(), manager);
+
+        vm.warp(mandate.nextPeriodEnd() - 1 hours); // mid-period: exits pay the fee
+        handler.postNav();
+        assertGt(mandate.exitFeeBps(), 0);
+        handler.contribute(1, 1_000 * USD);
+        handler.leaveAndRejoin(1);
+        assertGt(usd.balanceOf(plenum.treasury()), 0);
+        assertTrue(plenum.isMember(jonas)); // rejoined
+        assertFalse(handler.treasuryOverpaid());
+    }
 }

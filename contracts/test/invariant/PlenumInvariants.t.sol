@@ -29,9 +29,13 @@ contract Handler is Test {
     MockUSD usd;
     MockTBillVault tbill;
     MockCreditVault credit;
-    address manager;
+    address public manager;
+    address public manager2 = makeAddr("manager2");
+    address public originalManager;
+    address public treasury;
     address fallbackWriter;
     address[] public actors;
+    uint256[] pks;
     address[3] adapters;
     address public evil = makeAddr("evilAdapter");
     address public payee = makeAddr("outsidePayee"); // a member may redeem to any address
@@ -42,6 +46,8 @@ contract Handler is Test {
     bool public navWentBackwards; // 5
     bool public pausedWriteSucceeded; // 6
     bool public roundTripProfit; // 7
+    bool public treasuryOverpaid; // 8
+    uint256 nonce = 1000;
     uint64 public lastNavTs;
     uint256 public okExecutions;
 
@@ -54,7 +60,8 @@ contract Handler is Test {
         address[3] memory adapters_,
         address manager_,
         address fallbackWriter_,
-        address[] memory actors_
+        address[] memory actors_,
+        uint256[] memory pks_
     ) {
         plenum = plenum_;
         mandate = Mandate(plenum_.mandate());
@@ -66,8 +73,11 @@ contract Handler is Test {
         tbill = MockTBillVault(adapters_[0]);
         credit = MockCreditVault(adapters_[1]);
         manager = manager_;
+        originalManager = manager_;
         fallbackWriter = fallbackWriter_;
         actors = actors_;
+        pks = pks_;
+        treasury = plenum_.treasury();
     }
 
     // ------------------------------------------------------------- members
@@ -83,8 +93,65 @@ contract Handler is Test {
         address a = actors[who % actors.length];
         uint256 units = plenum.unitsOf(a) * bound(frac, 1, 100) / 100;
         if (units == 0) return;
+        uint256 feeBps = mandate.exitFeeBps();
+        uint256 t0 = usd.balanceOf(treasury);
         vm.prank(a);
-        try plenum.redeem(units, toPayee ? payee : a) {} catch {}
+        try plenum.redeem(units, toPayee ? payee : a) returns (uint256 out) {
+            _checkTreasury(t0, out, feeBps);
+        } catch {}
+    }
+
+    /// Leave (paying any breaking fee), then rejoin on an invite from a remaining member.
+    function leaveAndRejoin(uint256 who) external {
+        uint256 i = who % actors.length;
+        address a = actors[i];
+        if (!plenum.isMember(a)) return;
+        uint256 feeBps = mandate.exitFeeBps();
+        uint256 t0 = usd.balanceOf(treasury);
+        vm.prank(a);
+        try plenum.leave(a) returns (uint256 out) {
+            _checkTreasury(t0, out, feeBps);
+        } catch {
+            return;
+        }
+        for (uint256 k; k < actors.length; ++k) {
+            if (!plenum.isMember(actors[k])) continue;
+            uint64 expiry = uint64(block.timestamp + 1 days);
+            (uint8 v, bytes32 r, bytes32 s_) = vm.sign(pks[k], plenum.inviteDigest(a, ++nonce, expiry));
+            vm.prank(a);
+            try plenum.join(abi.encode(a, nonce, expiry, abi.encodePacked(r, s_, v)), bytes32(0)) {} catch {}
+            return;
+        }
+    }
+
+    /// Members change the fee and period by unanimous vote, wait out the timelock and apply.
+    function changeRules(uint256 feeSeed, uint256 periodSeed) external {
+        MandateConfig memory c = mandate.config();
+        c.earlyExitFeeBps = uint16(bound(feeSeed, 0, 1000));
+        c.periodLength = uint32(bound(periodSeed, 2 hours, 2 days));
+        c.exitWindow = c.periodLength / 4;
+        address proposer = _anyMember();
+        if (proposer == address(0)) return;
+        vm.prank(proposer);
+        uint256 id = gov.proposeMandateChange(c, keccak256("rules"));
+        _approveAll(id);
+        try gov.executeProposal(id) {} catch {}
+        vm.warp(block.timestamp + c.timelock);
+        try mandate.applyChange() {} catch {}
+        postNav();
+    }
+
+    /// Members swap the manager key back and forth; the fuzzer keeps acting as whoever holds it.
+    function replaceManager() external {
+        address next = gw.manager() == manager2 ? originalManager : manager2;
+        address proposer = _anyMember();
+        if (proposer == address(0)) return;
+        vm.prank(proposer);
+        uint256 id = gov.proposeManagerReplacement(next, keccak256("swap"));
+        _approveAll(id);
+        try gov.executeProposal(id) {
+            manager = next;
+        } catch {}
     }
 
     /// Invariant 7: contribute then immediately redeem at an unchanged NAV never returns more.
@@ -121,6 +188,7 @@ contract Handler is Test {
         uint256[] memory unitsBefore = _units();
         (uint256 cashPre, uint256[3] memory pre, uint256 total) = _holdings();
         bool wasPaused = gov.paused();
+        uint256 t0 = usd.balanceOf(treasury);
 
         vm.prank(manager);
         try gw.executeInBand(acts, keccak256("memo"), bytes32("qwen3.8-max")) returns (Reason r) {
@@ -131,6 +199,7 @@ contract Handler is Test {
             }
         } catch {}
         _checkUnits(unitsBefore);
+        if (usd.balanceOf(treasury) != t0) treasuryOverpaid = true; // only exits pay the treasury
     }
 
     function managerEscalate(uint256 adapterSeed, uint256 opSeed, uint256 amount, uint256 approvals) external {
@@ -180,6 +249,28 @@ contract Handler is Test {
     }
 
     // ------------------------------------------------------------- helpers
+
+    /// Invariant 8: an exit sends the treasury at most the breaking fee: with payout `out` and rate f, the fee is
+    /// f/(1-f) of the payout (2 wei of rounding tolerance); nothing when the exit is free.
+    function _checkTreasury(uint256 before, uint256 out, uint256 feeBps) internal {
+        uint256 got = usd.balanceOf(treasury) - before;
+        if (got * (BPS - feeBps) > out * feeBps + 2 * BPS) treasuryOverpaid = true;
+    }
+
+    function _anyMember() internal view returns (address) {
+        for (uint256 i; i < actors.length; ++i) {
+            if (plenum.isMember(actors[i])) return actors[i];
+        }
+        return address(0);
+    }
+
+    function _approveAll(uint256 id) internal {
+        for (uint256 i; i < actors.length; ++i) {
+            if (!plenum.isMember(actors[i])) continue;
+            vm.prank(actors[i]);
+            try gov.approve(id) {} catch {}
+        }
+    }
 
     function _action(uint256 adapterSeed, uint256 opSeed, uint256 amount, bool useEvil)
         internal
@@ -246,6 +337,17 @@ abstract contract InvariantSetup is Fixture {
 
     function setUp() public override {
         super.setUp();
+        // Short periods so the fuzzer crosses free-exit windows and pays breaking fees (SPEC A26).
+        MandateConfig memory c = balanced();
+        c.periodLength = 1 days;
+        c.exitWindow = 2 hours;
+        c.earlyExitFeeBps = 200;
+        c.timelock = 1 hours;
+        vm.prank(ana);
+        plenum = Plenum(factory.createPlenum("Fuzz club", 1, c, manager));
+        mandate = Mandate(plenum.mandate());
+        governance = plenum.governance();
+        gateway = plenum.gateway();
         _seedBalanced(10_000 * USD);
         _join(jonas, 2);
         _join(wei_, 3);
@@ -265,10 +367,16 @@ abstract contract InvariantSetup is Fixture {
             [address(tbill), address(credit), address(gold)],
             manager,
             fallbackWriter,
-            actors
+            actors,
+            _pks()
         );
         usd.grantRole(usd.MINTER_ROLE(), address(handler));
         targetContract(address(handler));
+    }
+
+    function _pks() internal view returns (uint256[] memory k) {
+        k = new uint256[](3);
+        (k[0], k[1], k[2]) = (anaPk, jonasPk, weiPk);
     }
 }
 
@@ -296,6 +404,7 @@ contract PlenumInvariants is InvariantSetup {
     function invariant_4_noValueToUnknownOrManager() public view {
         assertEq(usd.balanceOf(handler.evil()), 0);
         assertEq(usd.balanceOf(manager), 0);
+        assertEq(usd.balanceOf(handler.manager2()), 0); // a replacement manager is caged the same way
     }
 
     /// 5. NAV report timestamps strictly increase.
@@ -311,5 +420,11 @@ contract PlenumInvariants is InvariantSetup {
     /// 7. Contribute then immediately redeem never returns more than was contributed.
     function invariant_7_noRoundTripProfit() public view {
         assertFalse(handler.roundTripProfit());
+    }
+
+    /// 8. The treasury only ever receives breaking fees from member exits, never more than the fee rate, and never
+    ///    anything from a manager action (SPEC A26).
+    function invariant_8_treasuryOnlyGetsExitFees() public view {
+        assertFalse(handler.treasuryOverpaid());
     }
 }

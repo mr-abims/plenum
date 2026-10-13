@@ -14,13 +14,21 @@ interface IPlenum {
         address gateway;
         address navOracle;
         address organizer;
+        address treasury; // receives the protocol's cut of breaking fees (SPEC A26)
+        uint16 protocolFeeCutBps; // protocol's share of each breaking fee; the rest stays with the group
     }
 
     /// @notice Amendment A3. `encPubKey` is the member's X25519 data-room public key (not personal data).
     event MemberJoined(address indexed member, bytes32 encPubKey);
     /// @notice `navPerUnit` = settlement-asset units (6 decimals) per whole unit (1e12 base units, amendment A8).
     event Contributed(address indexed member, uint256 assets, uint256 units, uint256 navPerUnit);
+    /// @notice `assets` is what the member received, after any breaking fee.
     event Redeemed(address indexed member, uint256 units, uint256 assets, address to);
+    /// @notice An exit outside the free window paid `fee`; `toTreasury` went to the protocol, the rest stayed with
+    ///         the group, raising every remaining member's unit value (SPEC A26).
+    event ExitFeeCharged(address indexed member, uint256 fee, uint256 toTreasury);
+    /// @notice The member withdrew everything and gave up membership.
+    event MemberLeft(address indexed member);
     /// @notice One executed action. `result` = requestId for RequestRedeem, assets received for Claim, else 0.
     event ActionExecuted(address indexed adapter, Op op, uint256 assets, uint256 result);
 
@@ -33,8 +41,10 @@ interface IPlenum {
     /// @notice Contribute `assets` of the settlement asset; mints units at the current NAV per unit (virtual offset, δ = 6).
     function contribute(uint256 assets) external returns (uint256 units);
 
-    /// @notice Burn `units` and pay the settlement asset from the cash sleeve to `to`.
+    /// @notice Burn `units` and pay the settlement asset from the cash sleeve to `to`, less the current breaking fee.
     function redeem(uint256 units, address to) external returns (uint256 assets);
+    /// @notice Redeem every unit (less the current breaking fee) to `to` and give up membership.
+    function leave(address to) external returns (uint256 assets);
 
     /// @notice Run actions against allowlisted adapters. Only ManagerGateway or Governance.
     function execute(Action[] calldata actions) external;

@@ -24,6 +24,7 @@ abstract contract Fixture is Test {
 
     address fallbackWriter = makeAddr("fallbackWriter");
     address manager = makeAddr("manager");
+    address treasury = makeAddr("treasury");
 
     uint256 anaPk = 0xA11A;
     uint256 jonasPk = 0xB0B;
@@ -66,7 +67,9 @@ abstract contract Fixture is Test {
                 gatewayImpl: address(new ManagerGateway()),
                 asset: address(usd),
                 navOracle: address(oracle),
-                consentRegistry: address(consent)
+                consentRegistry: address(consent),
+                treasury: treasury,
+                protocolFeeCutBps: 2500
             })
         );
 
@@ -164,7 +167,7 @@ abstract contract Fixture is Test {
         c.cooldown = 1 minutes;
         c.maxMembers = 99;
         c.escalateQuorumBps = 5000;
-        c.mandateChangeBps = 6667;
+        c.mandateChangeBps = 6666;
         c.timelock = 48 hours;
         c.pauseQuorum = 2;
         c.votingPeriod = 48 hours;

@@ -37,7 +37,7 @@ enum NavSource {
     FALLBACK
 }
 
-/// @notice Investment policy as code (SPEC §7; amendments A5 and A19 add `pauseQuorum`, `votingPeriod`).
+/// @notice Investment policy as code (SPEC §7; amendments A5 and A19 add `pauseQuorum`, `votingPeriod`; A26 period and breaking fee).
 struct MandateConfig {
     address[] adapters; // allowlist; index i matches targetBps[i]
     uint16[] targetBps; // target weight per adapter, basis points of NAV
@@ -53,11 +53,12 @@ struct MandateConfig {
     uint32 timelock; // delay before a mandate change applies
     uint16 pauseQuorum; // k in k-of-n: member pause votes needed to pause the manager
     uint32 votingPeriod; // seconds an escalation stays open (SPEC A19)
+    uint32 periodLength; // investment period in seconds, repeating; 0 = no period, exits always free (SPEC A26)
+    uint32 exitWindow; // free-exit window at the end of each period, seconds (< periodLength)
+    uint16 earlyExitFeeBps; // breaking fee on exits outside the window, basis points of the gross amount (≤ 1000)
 }
 
 /// @notice Execution paths revert with the policy reason that blocked them.
 error PolicyViolation(Reason reason);
 /// @notice Caller lacks the role this function requires.
 error Unauthorized(address caller);
-/// @notice Session 0 stub marker; every occurrence is replaced by Session 2.
-error NotImplemented();

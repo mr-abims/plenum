@@ -24,6 +24,10 @@ contract PlenumFactory {
     address public immutable asset;
     address public immutable navOracle;
     address public immutable consentRegistry;
+    /// @notice Receives the protocol's cut of breaking fees (SPEC A26).
+    address public immutable treasury;
+    /// @notice Protocol's share of every breaking fee, fixed for all groups this factory creates.
+    uint16 public immutable protocolFeeCutBps;
 
     struct Deps {
         address plenumImpl;
@@ -33,9 +37,12 @@ contract PlenumFactory {
         address asset;
         address navOracle;
         address consentRegistry;
+        address treasury;
+        uint16 protocolFeeCutBps;
     }
 
     error ZeroManager();
+    error InvalidFeeConfig();
 
     constructor(Deps memory d) {
         plenumImpl = d.plenumImpl;
@@ -45,6 +52,9 @@ contract PlenumFactory {
         asset = d.asset;
         navOracle = d.navOracle;
         consentRegistry = d.consentRegistry;
+        if (d.treasury == address(0) || d.protocolFeeCutBps > 10_000) revert InvalidFeeConfig();
+        treasury = d.treasury;
+        protocolFeeCutBps = d.protocolFeeCutBps;
     }
 
     /// @notice Create a plenum from a template (0 Conservative, 1 Balanced, 2 Liquidity-first) and its config.
@@ -69,7 +79,9 @@ contract PlenumFactory {
                     governance: governance,
                     gateway: gateway,
                     navOracle: navOracle,
-                    organizer: msg.sender
+                    organizer: msg.sender,
+                    treasury: treasury,
+                    protocolFeeCutBps: protocolFeeCutBps
                 })
             );
         IMandate(mandate).initialize(plenum, navOracle, governance, config);

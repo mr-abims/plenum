@@ -33,9 +33,19 @@ interface IMandate {
     ///         by ManagerGateway (amendment A4).
     function check(Action[] calldata actions) external view returns (Reason);
 
-    /// @notice Queue a new config behind the timelock. Governance only (stretch: MD-3).
+    /// @notice Queue a new config behind the current config's timelock; replaces an older pending change.
+    ///         Governance only, after a supermajority vote (SPEC MD-3, A26).
     function scheduleChange(MandateConfig calldata newConfig) external;
-
-    /// @notice Apply a queued config after its eta. Governance only (stretch: MD-3).
+    /// @notice Apply the queued config once its eta has passed. Anyone may call. Reverts if an adapter being removed
+    ///         still holds value for the plenum, or if the new member cap is below the current member count.
     function applyChange() external;
+    /// @notice The queued config and when it can apply; `eta` is 0 when nothing is pending.
+    function pendingChange() external view returns (MandateConfig memory config, uint64 eta);
+    /// @notice Reverts with `InvalidConfig` unless `c` is a valid config (lets Governance and clients precheck).
+    function validateConfig(MandateConfig calldata c) external view;
+    /// @notice Breaking fee in basis points that an exit pays right now: 0 with no period, inside a free-exit window
+    ///         at the end of a period, or while a rule change is pending; otherwise `earlyExitFeeBps` (SPEC A26).
+    function exitFeeBps() external view returns (uint16);
+    /// @notice When the current period ends (0 with no period).
+    function nextPeriodEnd() external view returns (uint64);
 }

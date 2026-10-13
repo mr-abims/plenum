@@ -19,10 +19,13 @@ import {MockGold} from "../src/adapters/MockGold.sol";
 /// @dev Env: DEPLOYER_PRIVATE_KEY, FALLBACK_NAV_WRITER_KEY, CRE_FORWARDER (defaults to the CRE mock forwarder
 ///      for `cre workflow simulate --broadcast`), CREDIT_REDEEM_DELAY (seconds, default 300),
 ///      GOLD_PRICE_USD (initial MOCK gold price per ounce, default 4200; CRE then reports the real spot price),
+///      TREASURY (receives the protocol's cut of breaking fees, default the deployer),
 ///      FAUCET_PRIVATE_KEY (optional: testnet onboarding faucet, granted MINTER_ROLE on the test dollar).
 contract Deploy is Script {
     address constant CRE_MOCK_FORWARDER_MONAD_TESTNET = 0xB9F79d863261869B234c481D1f9A7af84AeAd192;
     uint256 constant ANVIL_KEY_0 = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    /// @dev Protocol's share of every breaking fee (SPEC A26); the rest stays with the group.
+    uint16 constant PROTOCOL_FEE_CUT_BPS = 2500;
     uint256 constant ANVIL_KEY_1 = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
 
     struct Deployed {
@@ -80,7 +83,9 @@ contract Deploy is Script {
                 gatewayImpl: address(new ManagerGateway()),
                 asset: address(d.usd),
                 navOracle: address(d.oracle),
-                consentRegistry: address(d.consent)
+                consentRegistry: address(d.consent),
+                treasury: vm.envOr("TREASURY", d.deployer),
+                protocolFeeCutBps: PROTOCOL_FEE_CUT_BPS
             })
         );
     }

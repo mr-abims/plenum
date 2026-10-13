@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Action} from "./Types.sol";
+import {Action, MandateConfig} from "./Types.sol";
 
 /// @title IGovernance
-/// @notice Members approve escalations, pause the manager and (stretch) replace it or change the mandate.
+/// @notice Members approve escalations, pause the manager, change the mandate and replace the manager (SPEC A26).
 interface IGovernance {
     event Escalated(uint256 indexed proposalId, bytes32 actionsHash, bytes32 rationaleHash);
     event Approved(uint256 indexed proposalId, address indexed member);
@@ -12,6 +12,10 @@ interface IGovernance {
     event Paused(address by);
     event Unpaused(address by);
     event ManagerReplaced(address oldManager, address newManager);
+    /// @notice A member proposed new rules; `configHash` = keccak256(abi.encode(config)).
+    event MandateChangeProposed(uint256 indexed proposalId, bytes32 configHash, bytes32 rationaleHash);
+    /// @notice A member proposed a new manager operator key.
+    event ManagerReplacementProposed(uint256 indexed proposalId, address newManager, bytes32 rationaleHash);
 
     /// @notice One-time setup by the factory.
     function initialize(address plenum, address mandate, address gateway) external;
@@ -32,9 +36,14 @@ interface IGovernance {
     /// @notice Lift the pause. Members only (quorum rule set in Session 2).
     function unpause() external;
 
-    /// @notice Stretch (MG-6): replace the manager operator key after a member vote.
-    function replaceManager(address newManager) external;
-
+    /// @notice Propose new rules. Members only. Passes with `mandateChangeBps` of members; executing it queues the
+    ///         config in Mandate behind the current timelock.
+    function proposeMandateChange(MandateConfig calldata config, bytes32 rationaleHash)
+        external
+        returns (uint256 proposalId);
+    /// @notice Propose a new manager operator key. Members only. Passes with `mandateChangeBps` of members and takes
+    ///         effect when executed.
+    function proposeManagerReplacement(address newManager, bytes32 rationaleHash) external returns (uint256 proposalId);
     /// @notice True while the manager is paused.
     function paused() external view returns (bool);
 }

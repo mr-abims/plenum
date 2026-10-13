@@ -89,7 +89,7 @@ library Templates {
         c.cooldown = t.cooldown;
         c.maxMembers = 99;
         c.escalateQuorumBps = t.escalateQuorumBps;
-        c.mandateChangeBps = 6667;
+        c.mandateChangeBps = 6666;
         c.timelock = 48 hours;
         c.pauseQuorum = t.pauseQuorum;
         c.votingPeriod = t.votingPeriod;

@@ -2,11 +2,12 @@
 pragma solidity ^0.8.26;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IMandate} from "../interfaces/IMandate.sol";
 import {IAssetAdapter} from "../interfaces/IAssetAdapter.sol";
 import {INavOracle} from "../interfaces/INavOracle.sol";
 import {IPlenum} from "../interfaces/IPlenum.sol";
-import {Action, MandateConfig, NotImplemented, Op, Reason} from "../interfaces/Types.sol";
+import {Action, MandateConfig, Op, Reason, Unauthorized} from "../interfaces/Types.sol";
 
 /// @title Mandate
 /// @notice One plenum's investment policy and its pure pre-trade check. `check` never reverts on policy.
@@ -14,7 +15,8 @@ import {Action, MandateConfig, NotImplemented, Op, Reason} from "../interfaces/T
 ///      gates freshness (SPEC A15). RequestRedeem moves value to "pending", which still counts toward its sleeve
 ///      but not toward the cash floor. No-worse rule (SPEC A18): each sleeve passes if it ends inside its band or
 ///      no further from target than it started, on the same side; cash passes if it ends at/above the floor or
-///      no lower than it started.
+///      no lower than it started. Members change the config by supermajority through Governance, behind the
+///      current config's timelock (SPEC MD-3, A26); exits are free while a change is pending.
 contract Mandate is IMandate, Initializable {
     uint256 internal constant BPS = 10_000;
 
@@ -22,8 +24,15 @@ contract Mandate is IMandate, Initializable {
     address public navOracle;
     address public governance;
     MandateConfig internal _config;
+    MandateConfig internal _pending;
+    uint64 internal _pendingEta;
+    /// @notice Start of the first investment period; reset when a rule change alters the period length.
+    uint64 public periodStart;
 
     error InvalidConfig();
+    error NoPendingChange();
+    error ChangeNotReady(uint64 eta);
+    error AdapterNotEmpty(address adapter);
 
     constructor() {
         _disableInitializers();
@@ -39,6 +48,7 @@ contract Mandate is IMandate, Initializable {
         navOracle = navOracle_;
         governance = governance_;
         _config = config_;
+        periodStart = SafeCast.toUint64(block.timestamp);
     }
 
     /// @inheritdoc IMandate
@@ -158,13 +168,67 @@ contract Mandate is IMandate, Initializable {
     }
 
     /// @inheritdoc IMandate
-    function scheduleChange(MandateConfig calldata) external pure {
-        revert NotImplemented(); // stretch: MD-3
+    function scheduleChange(MandateConfig calldata newConfig) external {
+        if (msg.sender != governance) revert Unauthorized(msg.sender);
+        _validate(newConfig);
+        uint64 eta = SafeCast.toUint64(block.timestamp + _config.timelock);
+        _pending = newConfig;
+        _pendingEta = eta;
+        emit MandateChangeScheduled(keccak256(abi.encode(newConfig)), eta);
     }
 
     /// @inheritdoc IMandate
-    function applyChange() external pure {
-        revert NotImplemented(); // stretch: MD-3
+    function applyChange() external {
+        uint64 eta = _pendingEta;
+        if (eta == 0) revert NoPendingChange();
+        if (block.timestamp < eta) revert ChangeNotReady(eta);
+        MandateConfig memory next = _pending;
+        address[] storage current = _config.adapters;
+        for (uint256 i; i < current.length; ++i) {
+            address a = current[i];
+            if (_contains(next.adapters, a)) continue;
+            // An asset can only leave the allowlist once the plenum holds nothing in it.
+            if (IAssetAdapter(a).valueOf(plenum) + IAssetAdapter(a).pendingOf(plenum) != 0) revert AdapterNotEmpty(a);
+        }
+        if (next.maxMembers < IPlenum(plenum).memberCount()) revert InvalidConfig();
+        if (next.periodLength != _config.periodLength) periodStart = SafeCast.toUint64(block.timestamp);
+        _config = next;
+        delete _pending;
+        _pendingEta = 0;
+        emit MandateChangeApplied(keccak256(abi.encode(next)));
+    }
+
+    /// @inheritdoc IMandate
+    function pendingChange() external view returns (MandateConfig memory config_, uint64 eta) {
+        return (_pending, _pendingEta);
+    }
+
+    /// @inheritdoc IMandate
+    function validateConfig(MandateConfig calldata c) external pure {
+        _validate(c);
+    }
+
+    /// @inheritdoc IMandate
+    function exitFeeBps() external view returns (uint16) {
+        uint256 len = _config.periodLength;
+        if (len == 0 || _pendingEta != 0) return 0;
+        uint256 elapsed = block.timestamp - periodStart;
+        if (elapsed >= len && elapsed % len < _config.exitWindow) return 0;
+        return _config.earlyExitFeeBps;
+    }
+
+    /// @inheritdoc IMandate
+    function nextPeriodEnd() external view returns (uint64) {
+        uint256 len = _config.periodLength;
+        if (len == 0) return 0;
+        return SafeCast.toUint64(periodStart + ((block.timestamp - periodStart) / len + 1) * len);
+    }
+
+    function _contains(address[] memory list, address a) internal pure returns (bool) {
+        for (uint256 i; i < list.length; ++i) {
+            if (list[i] == a) return true;
+        }
+        return false;
     }
 
     function _indexOf(address adapter) internal view returns (bool, uint256) {
@@ -190,5 +254,10 @@ contract Mandate is IMandate, Initializable {
         if (c.maxMembers == 0 || c.maxMembers > 99 || c.pauseQuorum == 0 || c.votingPeriod == 0) {
             revert InvalidConfig();
         }
+        // A rule change must need a real majority; the breaking fee is capped at 10%.
+        if (c.mandateChangeBps <= BPS / 2 || c.mandateChangeBps > BPS || c.earlyExitFeeBps > 1000) {
+            revert InvalidConfig();
+        }
+        if (c.periodLength != 0 && (c.exitWindow == 0 || c.exitWindow >= c.periodLength)) revert InvalidConfig();
     }
 }
