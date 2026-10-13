@@ -21,6 +21,7 @@ import { feedTitle } from "@/lib/feedText";
 import { ago, duration, durationAdj, inTimeZone, money, parseUsd, pct, until } from "@/lib/format";
 import { inviteLink, signInvite } from "@/lib/invite";
 import { exitQuote, UNIT, type PlenumState } from "@/lib/plenum";
+import { ensureFreshPrice, needsPrice } from "@/lib/price";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
 import { useTx } from "@/lib/useTx";
@@ -182,9 +183,13 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
   const leaveQuote = exitQuote(p, position.value, position.units);
   const noun = p.personal ? "portfolio" : "group";
 
+  // Contributions after the first, and every exit, are priced: fetch a FALLBACK price first if the CRE one is stale.
+  const priceStep = needsPrice(p) ? [{ label: "Get a fresh price (labelled FALLBACK writer, testnet)", run: (sent: (h: `0x${string}`) => void) => ensureFreshPrice(p, sent) }] : [];
+
   const leave = async () => {
     setDone(null);
     const ok = await tx.run([
+      ...(position.units > 0n ? priceStep : []),
       {
         label: p.personal ? "Withdraw everything and close the portfolio" : "Withdraw everything and leave the group",
         run: (sent) => send(session.account, { address: p.address, abi: plenumAbi, functionName: "leave", args: [session.account.address] }, sent),
@@ -203,10 +208,12 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
     const ok =
       mode === "in"
         ? await tx.run([
+            ...(p.totalUnits > 0n ? priceStep : []),
             { label: `Allow the group to receive ${money(a)}`, run: (sent) => send(session.account, { address: DEPLOYMENT.asset, abi: erc20Abi, functionName: "approve", args: [p.address, a] }, sent) },
             { label: `Contribute ${money(a)}`, run: (sent) => send(session.account, { address: p.address, abi: plenumAbi, functionName: "contribute", args: [a] }, sent) },
           ])
         : await tx.run([
+            ...priceStep,
             {
               label: `Take out ${money(a)}`,
               run: (sent) => {

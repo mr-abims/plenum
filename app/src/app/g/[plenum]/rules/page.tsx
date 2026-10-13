@@ -131,7 +131,7 @@ export default function RulesPage() {
                 <Clause icon={<PencilSimple size={16} />}>
                   Change these rules
                   <Value>
-                    {p.personal ? "you alone" : `${pct(p.mandateChangeBps, 0)} of members`}, then a {duration(p.timelock)} wait before they apply; leaving is free during the wait
+                    {p.personal ? "you alone" : `${pct(p.mandateChangeBps, 0)} of members`}, then a {durationAdj(p.timelock)} wait before they apply; leaving is free during the wait
                   </Value>
                 </Clause>
                 <Clause icon={<UserSwitch size={16} />}>

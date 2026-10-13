@@ -16,6 +16,7 @@ import { confirmWithPasskey } from "@/lib/account";
 import { send } from "@/lib/chain";
 import { duration, inTimeZone, money, pct, short } from "@/lib/format";
 import { loadProposals, type PlenumState, type ProposalView } from "@/lib/plenum";
+import { ensureFreshPrice, needsPrice } from "@/lib/price";
 import { configDiff } from "@/lib/rules";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
@@ -64,6 +65,7 @@ export default function ApprovalsPage() {
     if (!session || !p) return;
     setActive(`e${x.id}`);
     const ok = await tx.run([
+      ...(x.kind === "ACTIONS" && needsPrice(p) ? [{ label: "Get a fresh price (labelled FALLBACK writer, testnet)", run: (sent: (h: `0x${string}`) => void) => ensureFreshPrice(p, sent) }] : []),
       { label: `Carry out proposal ${x.id}`, run: (sent) => send(session.account, { address: p.governance, abi: governanceAbi, functionName: "executeProposal", args: [x.id] }, sent) },
     ]);
     if (ok) await Promise.all([refresh(), load()]);
