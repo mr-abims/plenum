@@ -4,7 +4,7 @@ import { ArrowClockwise, Check } from "@phosphor-icons/react";
 import { Button, MockTag, Notice, Spinner, TxLink } from "@/components/ui";
 import type { useAccountSetup } from "@/lib/useAccountSetup";
 
-const LABEL = { mint: "10,000 test dollars", gas: "0.1 MON for gas" } as const;
+const LABEL = { mint: "10,000 test dollars", gas: "1 MON for gas" } as const;
 
 /** Inline status for useAccountSetup: quiet when the account was already set up. */
 export function AccountSetup({ setup }: { setup: ReturnType<typeof useAccountSetup> }) {

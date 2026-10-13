@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { erc20Abi } from "viem";
+import { erc20Abi, parseEther } from "viem";
 import { monadTestnet } from "viem/chains";
 import type { MemberSession } from "./account";
 import { publicClient } from "./chain";
@@ -32,7 +32,8 @@ export function useAccountSetup(session: MemberSession | null) {
           publicClient.getBalance({ address }),
           publicClient.readContract({ address: DEPLOYMENT.asset, abi: erc20Abi, functionName: "balanceOf", args: [address] }),
         ]);
-        if ((gas > 0n && dollars > 0n) || CHAIN.id !== monadTestnet.id) {
+        // Enough gas to create a group (~0.29 MON) and some test dollars: nothing to do.
+        if ((gas >= parseEther("0.25") && dollars > 0n) || CHAIN.id !== monadTestnet.id) {
           if (live) setStatus("ready");
           return;
         }

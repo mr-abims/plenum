@@ -59,7 +59,7 @@ group already approved, within size, turnover and cooldown limits. **It can neve
 
 1. Open https://plenumx.vercel.app and press **Start**. Create an account with one passkey prompt (Face ID, Touch ID,
    iCloud Keychain or Google Password Manager). No seed phrase, no extension.
-2. Your testnet account is set up automatically: 10,000 **MOCK** test dollars and a little MON for gas.
+2. Your testnet account is set up automatically: 10,000 **MOCK** test dollars and 1 MON for gas.
 3. **Start a group**, or **Just me** for a personal portfolio, pick a template and contribute. That is your first
    Monad transaction. A personal portfolio is the fastest path: no invites needed, you approve and pause alone.
 4. On the landing page, **Try to break the rules**: every answer comes from a real group's contract. Then open

@@ -80,15 +80,7 @@ contract Rehearsal is Script {
         address organizer = vm.addr(c.pk);
         address manager = vm.addr(vm.envOr("MANAGER_OPERATOR_KEY", ANVIL_KEY_2));
         vm.startBroadcast(c.pk);
-        plenum = Plenum(
-            c.factory
-                .createPlenum(
-                    groupName(),
-                    Templates.BALANCED,
-                    mandate(c),
-                    manager
-                )
-        );
+        plenum = Plenum(c.factory.createPlenum(groupName(), Templates.BALANCED, mandate(c), manager));
         uint64 expiry = uint64(block.timestamp + 1 days);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(c.pk, plenum.inviteDigest(organizer, 1, expiry));
         plenum.join(abi.encode(organizer, uint256(1), expiry, abi.encodePacked(r, s, v)), bytes32(0));

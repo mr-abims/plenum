@@ -8,7 +8,7 @@ Implements SPEC §10–12. Next.js 16 (App Router) + React 19 + Tailwind 4 + nex
   the in-memory signing session; approve, pause and consent ask for the passkey again. Sessions end on reload,
   sign-out or 30 minutes without activity.
 - **Testnet onboarding (MOCK)**: right after the passkey prompt, `/api/testnet/onboard` (server-only faucet key) mints
-  10,000 MOCK test dollars and drips 0.1 MON for gas to new accounts; idempotent, signed by the account.
+  10,000 MOCK test dollars and drips 1 MON for gas (creating a group costs ~0.29 MON on Monad) to new accounts; idempotent, signed by the account.
 - **Reads**: contract state via viem (membership and consent from `Plenum.members()` / `ConsentRegistry.grantIdsOf`).
   The activity feed uses Envio (`NEXT_PUBLIC_INDEXER_URL`) and falls back to recent chain logs in 100-block chunks.
 - **Writes**: explicit gas limits on every transaction (Monad bills the declared limit).

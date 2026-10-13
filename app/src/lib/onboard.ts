@@ -2,7 +2,7 @@ import type { LocalAccount } from "viem";
 
 /**
  * Testnet onboarding (MOCK, Monad testnet only): one request, signed by the passkey account's signing session (no
- * extra prompt), gives a new account MOCK test dollars and a little MON for gas.
+ * extra prompt), gives a new account MOCK test dollars and 1 MON for gas.
  */
 export const onboardMessage = (address: string, at: number) => `Plenum testnet access\naccount ${address.toLowerCase()}\nat ${at}`;
 
