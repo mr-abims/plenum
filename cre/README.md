@@ -1,13 +1,21 @@
 # cre — Chainlink CRE NAV workflow
 
-Implements SPEC §9 (amendments A10, A17). The fund administrator: the manager never writes NAV.
+Implements SPEC §9 (amendments A10, A17, A25). The fund administrator: the manager never writes a price or NAV.
 
 `plenum-nav/main.ts` runs on a cron (`config.json` → `schedule`, every minute for the demo) and on an HTTP
-trigger. For each configured plenum it reads, at the **last finalized block** on Monad testnet:
-`Plenum.mandate()`, `Plenum.cash()`, `Mandate.config()` and every adapter's `valueOf` / `pendingOf`; computes
-NAV = cash + Σ(value + pending) and signed per-sleeve drift in bps (`plenum-nav/nav.ts`); and writes
-`abi.encode(plenum, nav, int256[] driftBps, uint64 timestamp)` through the forwarder to the shared `NavOracle`.
-The timestamp is the finalized block's, so it is never ahead of chain time (NavOracle rejects future reports).
+trigger. Each run:
+
+1. **External market data with consensus:** every node fetches the gold spot price from `goldPriceUrl`
+   (gold-api.com, keyless) through the CRE HTTP client; the DON agrees on the median (`consensusMedianAggregation`).
+2. **Price report:** writes `abi.encode(uint256 price, uint64 timestamp)` through the forwarder to `MockGold`, which
+   accepts only the forwarder and rejects stale, future-dated and >20% moves.
+3. **NAV report** for each configured plenum, at the **last finalized block** on Monad testnet: reads
+   `Plenum.mandate()`, `Plenum.cash()`, `Mandate.config()`, then every adapter's value (gold as ounces × the agreed
+   price) and pending value in **one Multicall3 call** (CRE allows 15 contract reads per run); computes
+   NAV = cash + Σ(value + pending) and signed per-sleeve drift in bps (`plenum-nav/nav.ts`); and writes
+   `abi.encode(plenum, nav, int256[] driftBps, uint64 timestamp)` through the forwarder to the shared `NavOracle`.
+
+Timestamps are the finalized block's, so they are never ahead of chain time (the receivers reject future reports).
 
 - SDK `@chainlink/cre-sdk` 1.23.0 (chain selector `monad-testnet`). The CRE compiler needs **TypeScript 5**
   (it uses the TS JS API, which TypeScript 7 does not ship) and Bun.
@@ -19,7 +27,7 @@ The timestamp is the finalized block's, so it is never ahead of chain time (NavO
 ## Run
 
 ```sh
-pnpm --filter @plenum/cre test       # NAV math + report encoding round-trip
+pnpm --filter @plenum/cre test       # NAV math, gold price conversion, report encodings (6 tests)
 pnpm --filter @plenum/cre compile    # bun x cre-compile → dist/plenum-nav.wasm (verified locally)
 ```
 
@@ -33,8 +41,9 @@ cre workflow simulate plenum-nav --target staging-settings --trigger-index 0 --n
 cre workflow simulate plenum-nav --target staging-settings --trigger-index 0 --non-interactive --broadcast
 ```
 
-Verified on Monad testnet: the broadcast run wrote `NavReported(plenum, 10000000000, …, CRE)` (see
-`docs/deployments.md`). `pnpm-workspace.yaml` pins TypeScript 5.9.3 for `@chainlink/cre-sdk` via
+Verified on Monad testnet: a broadcast run reports the gold spot price to `MockGold` and `NavReported(…, CRE)` for
+each plenum (transactions in `docs/deployments.md`). `config.json` lists the plenums priced (Showcase Club, Rehearsal
+Club, My Portfolio). `pnpm-workspace.yaml` pins TypeScript 5.9.3 for `@chainlink/cre-sdk` via
 `packageExtensions`: its compiler imports `typescript` at runtime but only lists it as a devDependency.
 
 If simulation is blocked, the labelled FALLBACK writer (`NavOracle.fallbackWrite`) keeps the demo running.

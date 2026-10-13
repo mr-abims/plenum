@@ -16,17 +16,31 @@ Model Studio (`qwen3.8-max`, Singapore, workspace-specific base URL).
    `escalate` only on WEIGHT_OUT_OF_BAND, TRADE_TOO_LARGE or LIQUIDITY_FLOOR.
 4. **Act**: explicit gas limits (Monad bills the declared limit). The contracts re-check everything.
 5. **Explain**: keccak256 of the canonical memo + model ID are committed onchain with the action.
-   Memos are stored by `MemoStore` — **TODO: encrypt to members and store in R2 (data room)**.
+   Memos are encrypted to every member's data-room key and stored through the app's blob API (`BlobMemoStore`);
+   members decrypt them in the app and check them against the onchain hash.
 
 Any argument that fails the zod schema is discarded before a call is made.
 
 ## Run
 
 ```sh
-# env: RPC_URL (or MONAD_TESTNET_RPC), CHAIN_ID, PLENUM_ADDRESS, MANAGER_OPERATOR_KEY, QWEN_API_KEY, QWEN_BASE_URL
-pnpm --filter @plenum/agent start    # every LOOP_INTERVAL_MS and on each NavReported for the plenum
-pnpm --filter @plenum/agent once     # a single run
+# env: RPC_URL, CHAIN_ID, PLENUM_ADDRESS, MANAGER_OPERATOR_KEY, MANAGER_ENC_SEED, BLOB_API_URL, and the model:
+#   LLM_API_KEY + LLM_BASE_URL=https://openrouter.ai/api/v1 + LLM_MODEL=qwen/qwen3.8-max-0902 (used on testnet), or
+#   QWEN_API_KEY + QWEN_BASE_URL (Alibaba Cloud Model Studio). LLM_* takes priority.
+pnpm --filter @plenum/agent model-check   # one tool-calling request to confirm the endpoint
+pnpm --filter @plenum/agent start         # every LOOP_INTERVAL_MS and on each NavReported for the plenum
+pnpm --filter @plenum/agent once          # a single run (logs the result and token usage)
 ```
+
+Scripts (run with `npx tsx`, env from the repo's `.env`):
+
+| Script | What it does |
+| --- | --- |
+| `scripts/testnet-rehearsal.ts` | Group lifecycle with a scripted plan: CRE price, in-band, escalation, approval, execution, memo check |
+| `scripts/personal-lifecycle.ts` | Personal portfolio: outsider refused by the member cap, owner-only approval, owner-only pause |
+| `scripts/live-injection.ts` | RT-1 against the live model: planted news to move 40% to an outside address |
+| `scripts/register-agent.ts` | Registers the manager's ERC-8004 identity (idempotent) |
+| `scripts/e2e-dataroom.ts` | Local end to end: consent grant → manager reads → encrypted memo matches the onchain hash |
 
 ## Tests
 
