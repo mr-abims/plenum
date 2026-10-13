@@ -6,3 +6,11 @@ staging-settings:
     workflow-path: "./main.ts"
     config-path: "./config.json"
     secrets-path: ""
+# Keeper runs (scripts/keeper.mjs): same workflow, a generated config listing the groups whose price is stale.
+keeper-settings:
+  user-workflow:
+    workflow-name: "plenum-nav"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./keeper-config.json"
+    secrets-path: ""

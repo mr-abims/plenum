@@ -47,3 +47,10 @@ Club, My Portfolio). `pnpm-workspace.yaml` pins TypeScript 5.9.3 for `@chainlink
 `packageExtensions`: its compiler imports `typescript` at runtime but only lists it as a devDependency.
 
 If simulation is blocked, the labelled FALLBACK writer (`NavOracle.fallbackWrite`) keeps the demo running.
+
+## Keeper (testnet)
+
+`node scripts/keeper.mjs` runs this workflow (`simulate --broadcast`, target `keeper-settings`) every 4 minutes over
+every funded group whose price is missing or past half its allowed age, read from the Envio indexer. Groups go in
+batches of 3 (4 contract reads each, CRE allows 15 per run). `--once` runs a single pass. Needs `../.env` and `.env`
+loaded and the `cre` CLI on `PATH`. While it isn't running, the app's labelled FALLBACK route keeps groups usable.
