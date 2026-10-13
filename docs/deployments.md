@@ -38,6 +38,7 @@ forwarder for `cre workflow simulate --broadcast`). Testnet onboarding faucet (M
 | --- | --- | --- |
 | Rehearsal Club (Balanced, demo timing; used by the agent rehearsal) | [`0xE66A3b31097c733499029AaAcb84F23231B0aaDb`](https://testnet.monadvision.com/address/0xE66A3b31097c733499029AaAcb84F23231B0aaDb) | [`0x262d92BBccF6ee1cAeDC5f0062e5BDc95b162Bbb`](https://testnet.monadvision.com/address/0x262d92BBccF6ee1cAeDC5f0062e5BDc95b162Bbb) |
 | Showcase Club (Balanced, 30-day price window; asked live by the landing page console) | [`0x92b7F27235622418B254C9B50b6B90aB330936BC`](https://testnet.monadvision.com/address/0x92b7F27235622418B254C9B50b6B90aB330936BC) | [`0x0138B705D683FC56481FBFD72d44a59c17FE1803`](https://testnet.monadvision.com/address/0x0138B705D683FC56481FBFD72d44a59c17FE1803) |
+| My Portfolio (personal portfolio: Balanced, member cap 1, pause quorum 1, owner alone approves; demo timing) | [`0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A`](https://testnet.monadvision.com/address/0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A) | [`0x4c8b480593253D9a3E4307bcC58Fd6225fc33040`](https://testnet.monadvision.com/address/0x4c8b480593253D9a3E4307bcC58Fd6225fc33040) |
 
 ## AI manager identity (ERC-8004)
 
@@ -62,6 +63,32 @@ forwarder for `cre workflow simulate --broadcast`). Testnet onboarding faucet (M
 | The manager registers its ERC-8004 identity (agent #2128, `tokenURI` = agent card) | [0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) |
 
 Check any manager transaction above at https://plenumx.vercel.app/verify.
+
+## Personal portfolio end to end (My Portfolio, Oct 13)
+
+The same lifecycle as the groups, with one owner. Reproduce with `contracts/script/Personal.s.sol` and
+`agent/scripts/personal-lifecycle.ts`; the live model run is `agent/src/main.ts --once` with `PLENUM_ADDRESS` set to
+the portfolio.
+
+| What | Transaction |
+| --- | --- |
+| Created from the factory with a personal mandate (maxMembers 1) | [0xa337248d…](https://testnet.monadvision.com/tx/0xa337248dbf18c7b75db6f95904e2ed4b45b4849d894d537df951c0e95ff8c086) |
+| Owner joins and contributes 10,000 test dollars | [0xa38d9e85…](https://testnet.monadvision.com/tx/0xa38d9e85f9f27d459fa7adbe74b03cb79a1865872015dacf226d8af60df03b8d) |
+| Initial allocation executes on the owner's single approval | [0x413cbbaa…](https://testnet.monadvision.com/tx/0x413cbbaa9035035b88491886d3d4d2d8ed2d967b1409c98b8fe98317eae3ef47) |
+| An outsider holding a valid owner-signed invite cannot join: reverts `PolicyViolation(MEMBER_CAP)` | [0xc6c1c6df…](https://testnet.monadvision.com/tx/0xc6c1c6dfe9d2c05db96a5ac42856beef658e5b4c430a7e93c9d62f74dff90d12) |
+| Oversized manager trade (15%) refused in-band (`TRADE_TOO_LARGE`) and escalated | [0xd9301377…](https://testnet.monadvision.com/tx/0xd9301377ba9c4aa229e59059aea5d4ae918b340745448ad07ae646535559ca03) |
+| The owner alone approves | [0xb516e74a…](https://testnet.monadvision.com/tx/0xb516e74a975f6bec586cddcb21ae799ec5dbdeab09427ad131959bd7341300c9) |
+| The proposal executes | [0x15a28e5d…](https://testnet.monadvision.com/tx/0x15a28e5d8c7e5e89cf66cc224331f7ac54f71902ca35ff556a3bded697bc3106) |
+| The owner alone pauses the manager (one vote) | [0xbe302d36…](https://testnet.monadvision.com/tx/0xbe302d3653aa64f2bf0789c4ecbd1c6ebe3d6248651b26928f6a03f3d2dd30e4) |
+| While paused, the manager's write reverts `PolicyViolation(PAUSED)` | [0x7cf78dae…](https://testnet.monadvision.com/tx/0x7cf78dae23c61fe96470ab558f5b8bcee31ec30df2d81e022dfbd0699535312a) |
+| The owner resumes the manager | [0x2c3e142d…](https://testnet.monadvision.com/tx/0x2c3e142dea4673c5c7de7815b2c5ce92e24d82d1460e5a1fa28ec7f08eadb178) |
+| Chainlink CRE prices the portfolio (`NavReported(…, CRE)`, gold at the spot price) | [0x87e4548d…](https://testnet.monadvision.com/tx/0x87e4548d09fdd52fedce7b4c2893be254a461aecba68277ea84c04d9862e5a15) |
+| **Live Qwen 3.8 Max** finds gold ~30% (range 12–18%) and T-bills ~30% (range 40–50%), simulates a rebalance inside the caps, gets `OK` and executes in-band (model id `qwen/qwen3.8-max-0902`; 3 calls, ~$0.07) | [0x604c06a3…](https://testnet.monadvision.com/tx/0x604c06a353f6eee7fb1cfc1b4fdd4d976842fb08d5204c5cf4535a6f09a2ae20) |
+
+An earlier live run on this portfolio stopped correctly with `NAV_STALE`: the model reasoned for about 2½ minutes and
+the manually triggered CRE price crossed the 10-minute demo window before it simulated. In production CRE reports every
+minute.
+
 
 ## Live model: Qwen 3.8 Max (via OpenRouter, served by Alibaba), Oct 13
 

@@ -77,7 +77,8 @@ group already approved, within size, turnover and cooldown limits. **It can neve
 | Pausing the AI | Any two members (configurable) | You, instantly |
 | Everything else | Same contracts, mandate checks, CRE prices, provenance and encrypted data room | Same |
 
-Both start from the same screen: **Start a group** or **Just me**.
+Both start from the same screen: **Start a group** or **Just me**. Both are tested end to end on Monad testnet, including a live Qwen rebalance of a
+personal portfolio and an outsider's join refused by its member cap ([evidence](docs/deployments.md#personal-portfolio-end-to-end-my-portfolio-oct-13)).
 
 ## How a group runs
 

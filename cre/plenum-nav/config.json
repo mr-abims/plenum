@@ -6,7 +6,8 @@
   "goldPriceUrl": "https://api.gold-api.com/price/XAU",
   "plenums": [
     "0x92b7F27235622418B254C9B50b6B90aB330936BC",
-    "0xE66A3b31097c733499029AaAcb84F23231B0aaDb"
+    "0xE66A3b31097c733499029AaAcb84F23231B0aaDb",
+    "0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A"
   ],
   "gasLimit": "300000"
 }

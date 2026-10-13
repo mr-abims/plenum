@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Action, Op} from "../src/interfaces/Types.sol";
+import {Action, MandateConfig, Op} from "../src/interfaces/Types.sol";
 import {Plenum} from "../src/core/Plenum.sol";
 import {Governance} from "../src/core/Governance.sol";
 import {NavOracle} from "../src/core/NavOracle.sol";
@@ -59,6 +59,10 @@ contract Rehearsal is Script {
         return ".rehearsalPlenum";
     }
 
+    function mandate(Ctx memory c) internal pure virtual returns (MandateConfig memory) {
+        return Templates.build(Templates.BALANCED, c.tbill, c.credit, c.gold, timing());
+    }
+
     function _load() internal view returns (Ctx memory c) {
         c.path = string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.chainid), ".json");
         string memory json = vm.readFile(c.path);
@@ -81,7 +85,7 @@ contract Rehearsal is Script {
                 .createPlenum(
                     groupName(),
                     Templates.BALANCED,
-                    Templates.build(Templates.BALANCED, c.tbill, c.credit, c.gold, timing()),
+                    mandate(c),
                     manager
                 )
         );

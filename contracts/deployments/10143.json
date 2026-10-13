@@ -15,5 +15,6 @@
   "managerAgentId": 2128,
   "managerAgentTx": "0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503",
   "rehearsalPlenum": "0xE66A3b31097c733499029AaAcb84F23231B0aaDb",
-  "showcasePlenum": "0x92b7F27235622418B254C9B50b6B90aB330936BC"
+  "showcasePlenum": "0x92b7F27235622418B254C9B50b6B90aB330936BC",
+  "personalPlenum": "0x578Cb3Db1Af6e959a9a8365857fa6a3446C8D63A"
 }
