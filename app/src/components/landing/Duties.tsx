@@ -53,7 +53,7 @@ export function Duties() {
           icon={<Ticket size={22} weight="duotone" />}
           duty="Admit"
           who="Members, by signed invite"
-          body="Only someone holding an invite signed by a member can join. The contract checks the signature, the expiry and the group's size limit."
+          body="Only someone holding an invite signed by a member can join. The contract checks the signature, the expiry and the size limit, which is one for a personal portfolio."
           contract="Plenum.join · EIP-712 invite"
           tint="bg-sunk"
           visual={
@@ -70,8 +70,8 @@ export function Duties() {
         <Cell
           icon={<Fingerprint size={22} weight="duotone" />}
           duty="Own & decide"
-          who="Members, signing with passkeys"
-          body="Members approve anything outside the rules, and any few of them can pause the manager instantly. No seed phrases, no extensions."
+          who="Members, or just you, signing with passkeys"
+          body="Members approve anything outside the rules, and any few of them can pause the manager instantly. In a personal portfolio, that is just you. No seed phrases, no extensions."
           contract="Governance"
           tint="bg-accent-soft border-accent/20"
           visual={

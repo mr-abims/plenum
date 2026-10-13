@@ -32,7 +32,7 @@
   "landing": {
     "heroTitleA": "Who guards the guardian?",
     "heroTitleB": "Your rules do.",
-    "heroLead": "Pool money with people you trust. An AI manages it daily, and contracts on Monad keep it inside your rules.",
+    "heroLead": "Pool money with people you trust, or invest on your own. An AI manages it daily, and contracts on Monad keep it inside your rules.",
     "create": "Create a group",
     "join": "I have an invite",
     "manifesto": "Professional money management starts around $25 million. Everyone else runs on a spreadsheet and trust in one treasurer.",
@@ -46,6 +46,7 @@
     "flowTitle": "From a group chat to a governed fund.",
     "closeTitle": "Your group. Your rules. An AI that answers to both.",
     "disclaimer": "Plenum is software, not a fund or an adviser. It runs on Monad testnet with test money. Simulated assets and test dollars are labelled MOCK; the backup price writer is labelled FALLBACK.",
-    "solo": "Investing on your own? Start a personal portfolio"
+    "solo": "Invest on my own",
+    "inviteLink": "I have an invite"
   }
 }

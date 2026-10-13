@@ -60,11 +60,24 @@ group already approved, within size, turnover and cooldown limits. **It can neve
 1. Open https://plenumx.vercel.app and press **Start**. Create an account with one passkey prompt (Face ID, Touch ID,
    iCloud Keychain or Google Password Manager). No seed phrase, no extension.
 2. Your testnet account is set up automatically: 10,000 **MOCK** test dollars and a little MON for gas.
-3. **Start a group** (or **Just me**), pick a template and contribute. That is your first Monad transaction.
+3. **Start a group**, or **Just me** for a personal portfolio, pick a template and contribute. That is your first
+   Monad transaction. A personal portfolio is the fastest path: no invites needed, you approve and pause alone.
 4. On the landing page, **Try to break the rules**: every answer comes from a real group's contract. Then open
    [`/verify`](https://plenumx.vercel.app/verify) and paste a manager transaction from
    [docs/deployments.md](docs/deployments.md).
 5. Invite a second account with a link from your group's home page to see approvals and pausing.
+
+## Two ways to use it
+
+| | A group (the core product) | A personal portfolio |
+| --- | --- | --- |
+| Who | An investment club, family, founders or friends pooling money | One person investing alone |
+| Who joins | Anyone a member invites with a signed link (up to 99) | Nobody else: the member cap is 1 |
+| Bigger moves | A share of members must approve | You approve |
+| Pausing the AI | Any two members (configurable) | You, instantly |
+| Everything else | Same contracts, mandate checks, CRE prices, provenance and encrypted data room | Same |
+
+Both start from the same screen: **Start a group** or **Just me**.
 
 ## How a group runs
 

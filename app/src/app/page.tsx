@@ -11,8 +11,8 @@ import { DEPLOYMENT, EXPLORER } from "@/lib/config";
 import { EVIDENCE, EVIDENCE_EXPLORER } from "@/lib/evidence";
 
 const FLOW = [
-  { icon: UsersThree, title: "Start a group", body: "Pick Conservative, Balanced or Liquidity-first. The template becomes your mandate, written into a contract. Investing alone? A personal portfolio runs on the same rules." },
-  { icon: LinkSimple, title: "Invite people you trust", body: "Send a single-use link signed by you. Only someone holding a member's invite can join." },
+  { icon: UsersThree, title: "Start a group or a portfolio", body: "Pick Conservative, Balanced or Liquidity-first. The template becomes your mandate, written into a contract. A group is for investing together; a personal portfolio is just you, on the same rules." },
+  { icon: LinkSimple, title: "Invite people you trust", body: "For a group, send single-use links signed by you; only someone holding a member's invite can join. A personal portfolio takes no one else." },
   { icon: HandCoins, title: "Contribute", body: "Put money in and receive units at the latest independent price. See it in your own currency." },
   { icon: Robot, title: "Let the manager work", body: "It rebalances inside the rules and explains every move with a fingerprint of its reasoning onchain." },
   { icon: Gavel, title: "Stay in charge", body: "Approve the bigger moves with your passkey. Pause the manager at any time. Share your data only when you choose." },
@@ -37,12 +37,12 @@ export default async function Landing() {
               {t("create")}
               <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/join" className="inline-flex min-h-13 items-center rounded-full border border-line-strong px-7 text-[15px] font-medium transition hover:border-faint hover:bg-well active:scale-[0.98]">
-              {t("join")}
+            <Link href="/create?mode=personal" className="inline-flex min-h-13 items-center rounded-full border border-line-strong px-7 text-[15px] font-medium transition hover:border-faint hover:bg-well active:scale-[0.98]">
+              {t("solo")}
             </Link>
           </div>
-          <Link href="/create?mode=personal" className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline">
-            {t("solo")} <ArrowRight size={14} />
+          <Link href="/join" className="mt-5 inline-flex items-center gap-1.5 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline">
+            {t("inviteLink")} <ArrowRight size={14} />
           </Link>
         </Reveal>
         <Reveal delay={0.15}>

@@ -186,14 +186,14 @@ function Start() {
 
       {groups && groups.length > 0 ? (
         <Card className="space-y-3">
-          <h2 className="font-display text-xl font-semibold tracking-tight">Your groups</h2>
+          <h2 className="font-display text-xl font-semibold tracking-tight">Your groups and portfolios</h2>
           <ul className="divide-y divide-line">
             {groups.map((g) => (
               <li key={g.address}>
                 <Link href={`/g/${g.address}`} className="flex items-center justify-between gap-3 py-3 transition hover:text-accent">
                   <span className="font-medium">{g.name}</span>
                   <span className="flex items-center gap-2 text-xs text-muted">
-                    {g.memberCount} member{g.memberCount === 1 ? "" : "s"} <ArrowRight size={14} />
+                    {g.personal ? "Personal portfolio" : `Group · ${g.memberCount} member${g.memberCount === 1 ? "" : "s"}`} <ArrowRight size={14} />
                   </span>
                 </Link>
               </li>

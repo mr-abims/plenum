@@ -1,5 +1,5 @@
 import { decodeEventLog, type Address, type Hash } from "viem";
-import { governanceAbi, managerGatewayAbi, navOracleAbi, plenumAbi, REASONS, OPS } from "@plenum/abis";
+import { governanceAbi, managerGatewayAbi, mandateAbi, navOracleAbi, plenumAbi, REASONS, OPS } from "@plenum/abis";
 import { publicClient } from "./chain";
 import { adapterName, CHAIN, DEPLOYMENT, INDEXER_URL } from "./config";
 import type { PlenumState } from "./plenum";
@@ -137,6 +137,8 @@ export interface MyGroup {
   address: Address;
   name: string;
   memberCount: number;
+  /** A personal portfolio: a plenum of one (maxMembers = 1, SPEC A23). */
+  personal: boolean;
 }
 
 /**
@@ -146,14 +148,19 @@ export interface MyGroup {
 export async function loadMyGroups(member: Address): Promise<MyGroup[]> {
   if (!INDEXER_URL) return [];
   const query = `query Mine($m: String!) {
-    Member(where: {address: {_eq: $m}}) { plenum { id name memberCount } }
+    Member(where: {address: {_eq: $m}}) { plenum { id name memberCount mandate } }
   }`;
   const res = await fetch(INDEXER_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ query, variables: { m: member.toLowerCase() } }),
   });
-  const body = (await res.json()) as { data?: { Member: { plenum: { id: Address; name: string; memberCount: number } }[] } };
+  const body = (await res.json()) as { data?: { Member: { plenum: { id: Address; name: string; memberCount: number; mandate: Address } }[] } };
   if (!body.data) throw new Error("indexer unavailable");
-  return body.data.Member.map(({ plenum: p }) => ({ address: p.id, name: p.name, memberCount: p.memberCount }));
+  const plenums = body.data.Member.map((m) => m.plenum);
+  // One batched read per mandate: a member cap of 1 marks a personal portfolio.
+  const caps = await Promise.all(
+    plenums.map((p) => publicClient.readContract({ address: p.mandate, abi: mandateAbi, functionName: "maxMembers" }).catch(() => 0)),
+  );
+  return plenums.map((p, i) => ({ address: p.id, name: p.name, memberCount: p.memberCount, personal: Number(caps[i]) === 1 }));
 }
