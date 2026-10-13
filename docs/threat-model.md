@@ -57,7 +57,7 @@ Fuzz: unit-math round trip (invariant 7), first-depositor inflation (attacker ne
 | Data-room API (`/api/blobs`) | Someone overwrites or deletes another member's documents | Blob ids end with the owner's address; every write/delete is an EIP-191 signature over method, id, body hash and time (5-minute window); only encrypted envelopes are accepted |
 | Blob storage (Vercel Blob, private) | Storage provider or a leaked URL exposes data | Ciphertext only, AES-256-GCM with per-reader HPKE-wrapped keys; reads go through the API, never public URLs |
 | Manager memos | Tampered or swapped reasoning | keccak256 of the canonical memo is committed onchain; members check the decrypted memo against it |
-| Prompt injection | Outside text steers the model | Nonce-fenced DATA blocks, schema-validated plans, no transfer tool, onchain re-checks (RT-1, RT-2) |
+| Prompt injection | Outside text steers the model | Nonce-fenced DATA blocks, schema-validated plans, no transfer tool, onchain re-checks (RT-1, RT-2). Live check against Qwen 3.8 Max: the model ignored planted news and wrote nothing (`agent/scripts/live-injection.ts`, docs/deployments.md) |
 | Public RPC limits (~15 req/s, 100-block `eth_getLogs`) | Missed or slow reads during the demo | Multicall batching with retries; membership and consent read from contract state; history from the Envio indexer |
 
 ## Known residual risks

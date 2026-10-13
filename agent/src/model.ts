@@ -17,6 +17,8 @@ export interface ChatModel {
  */
 export class QwenModel implements ChatModel {
   private readonly client: OpenAI;
+  /** Running token totals for this process (reported in run logs). */
+  readonly usage = { calls: 0, promptTokens: 0, completionTokens: 0 };
 
   constructor(
     apiKey: string,
@@ -35,6 +37,9 @@ export class QwenModel implements ChatModel {
       parallel_tool_calls: false,
       temperature: 0.2,
     });
+    this.usage.calls += 1;
+    this.usage.promptTokens += res.usage?.prompt_tokens ?? 0;
+    this.usage.completionTokens += res.usage?.completion_tokens ?? 0;
     const message = res.choices[0]?.message;
     if (!message) throw new Error("model returned no choices");
     return message;

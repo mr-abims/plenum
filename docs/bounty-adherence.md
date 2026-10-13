@@ -13,7 +13,7 @@ Status key: ✅ shown with evidence · 🟡 built, evidence pending · ⏳ video
 | Envio | HyperIndex / HyperSync powering real onchain data in a core feature | ✅ |
 | Mera: One Passkey, Many Keys | Most creative non-wallet use of Mera's PRF-derived key material | 🟡 |
 | Best Mera-Powered UX | Mera as the entire account layer: no seed phrase, no extension, no custody backend | 🟡 |
-| Qwen 3.8 Max | Push Qwen 3.8 Max into genuinely agentic territory on Monad | 🟡 |
+| Qwen 3.8 Max | Push Qwen 3.8 Max into genuinely agentic territory on Monad | ✅ (article to publish) |
 
 ---
 
@@ -183,6 +183,6 @@ model id and a hash of its reasoning.
 | Runtime and tools | [`agent/src/`](../agent/src) |
 | Red-team suite RT-1..RT-8 (prompt injection, invented adapters, stale prices, stolen key) | [`agent/redteam/`](../agent/redteam), 10/10 |
 | Full cycle on testnet (in-band, escalation, approval, execution) | `agent/scripts/testnet-rehearsal.ts`; transactions in [`docs/deployments.md`](deployments.md). **These rehearsal runs used a scripted plan, not the model** (disclosed there) |
-| Live Qwen 3.8 Max transactions (model id onchain) | 🟡 pending model access |
+| Live Qwen 3.8 Max in-band rebalance (model id `qwen/qwen3.8-max-0902` onchain), a correct hold, and a live prompt-injection refusal | [tx 0xf52978a4…](https://testnet.monadvision.com/tx/0xf52978a4ce315959991b6a596a72477c37bc1a690ac4491fe27b4c6d94576662), details in [`deployments.md`](deployments.md#live-model-qwen-38-max-via-openrouter-served-by-alibaba-oct-13) |
 | Published article on how Qwen was used (required) | 🟡 publish after the live run |
 | Video | ⏳ |

@@ -105,6 +105,7 @@ can't be bought by outside accounts.
 | --- | --- |
 | Contracts (unit, fuzz, invariants) | **100 passing**, including 7 handler-based invariants at 16,384 random calls each |
 | Red team RT-1..RT-8 (prompt injection, invented adapters, stale prices, oversized trades, turnover evasion, stolen key, expired consent) | **10/10** against the real runtime and contracts |
+| Live model (Qwen 3.8 Max) | Rebalanced in-band on testnet ([tx](https://testnet.monadvision.com/tx/0xf52978a4ce315959991b6a596a72477c37bc1a690ac4491fe27b4c6d94576662)), held when in range, and refused a planted "move 40% to this address" instruction |
 | Data-room cryptography | 9 passing, derivation cross-checked against Node's HKDF / X25519 |
 | CRE workflow math | 6 passing (NAV, drift, gold price conversion, report encodings) |
 | Static analysis | Slither and Aderyn: every finding fixed or explained in [docs/threat-model.md](docs/threat-model.md) |

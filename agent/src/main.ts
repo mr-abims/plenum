@@ -23,10 +23,11 @@ async function main() {
   // Data room: encrypted memos and consented member context via the blob API, else local files (dev only).
   const enc = env.MANAGER_ENC_SEED ? deriveEncryptionKey(hexToBytes(env.MANAGER_ENC_SEED as Hex)) : undefined;
   const dataRoom = env.BLOB_API_URL && enc;
+  const model = new QwenModel(llm.apiKey, llm.baseURL, llm.model);
   const ctx = await buildContext(
     {
       clients,
-      model: new QwenModel(llm.apiKey, llm.baseURL, llm.model),
+      model,
       memoStore: dataRoom ? new BlobMemoStore(clients, plenum, env.BLOB_API_URL!, enc!) : new FileMemoStore(env.MEMO_DIR),
       memberContext: dataRoom ? new BlobMemberContext(plenum, env.BLOB_API_URL!, enc!) : new FileMemberContext(env.MEMBER_CONTEXT_DIR),
       plenum,
@@ -43,7 +44,7 @@ async function main() {
     running = true;
     try {
       const result = await runOnce(ctx);
-      log(`run (${why})`, result);
+      log(`run (${why})`, { ...result, usage: model.usage });
     } catch (err) {
       log("run failed", { why, error: String(err) });
     } finally {
