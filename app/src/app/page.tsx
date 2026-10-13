@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ArrowRight, Gavel, HandCoins, LinkSimple, Robot, ShieldCheck, UsersThree, Warning } from "@phosphor-icons/react/ssr";
+import { ArrowRight, CalendarCheck, Gavel, HandCoins, LinkSimple, PencilSimpleLine, Robot, SealCheck, ShieldCheck, UsersThree, Warning } from "@phosphor-icons/react/ssr";
 import { HeroChamber } from "@/components/landing/HeroChamber";
 import { Duties } from "@/components/landing/Duties";
 import { RuleConsole } from "@/components/landing/RuleConsole";
@@ -16,6 +16,9 @@ const FLOW = [
   { icon: HandCoins, title: "Contribute", body: "Put money in and receive units at the latest independent price. See it in your own currency." },
   { icon: Robot, title: "Let the manager work", body: "It rebalances inside the rules and explains every move with a fingerprint of its reasoning onchain." },
   { icon: Gavel, title: "Stay in charge", body: "Approve the bigger moves with your passkey. Pause the manager at any time. Share your data only when you choose." },
+  { icon: PencilSimpleLine, title: "Change the rules together", body: "Two-thirds of members can add or drop assets, move targets and caps, or vote in a different AI manager. New rules wait out a delay, and anyone who disagrees can leave free in the meantime." },
+  { icon: SealCheck, title: "Check any action yourself", body: "Paste a manager transaction into the verify page: it proves from chain state alone which group's gateway sent it, which model wrote the plan and that the reasoning matches its fingerprint." },
+  { icon: CalendarCheck, title: "Leave on fair terms", body: "Invest in periods that renew on their own. Leave free in the window after each period; leave early and a small fee applies: three quarters stay with the group, a quarter funds Plenum." },
 ] as const;
 
 const TONE = { accent: "text-accent border-accent/30 bg-accent-soft", info: "text-info border-info/30 bg-info/10", warn: "text-warn border-warn/30 bg-warn/10", bad: "text-bad border-bad/40 bg-bad/10" } as const;
@@ -123,9 +126,10 @@ export default async function Landing() {
         <Reveal>
           <h2 className="max-w-3xl font-display text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{t("flowTitle")}</h2>
         </Reveal>
-        <div className="rail -mx-4 mt-12 flex gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        {/* Swipe rail on phones and tablets; every step visible at once on desktop. */}
+        <div className="rail -mx-4 mt-12 flex gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:pb-0">
           {FLOW.map((f, i) => (
-            <Reveal key={f.title} delay={i * 0.06} className="w-[78vw] max-w-[320px] shrink-0 sm:w-[300px]">
+            <Reveal key={f.title} delay={(i % 4) * 0.06} className="w-[78vw] max-w-[320px] shrink-0 sm:w-[300px] lg:w-auto lg:max-w-none">
               <article className="flex h-full flex-col rounded-[24px] border border-line bg-raised p-6">
                 <span className="grid size-11 place-items-center rounded-2xl border border-line-strong bg-sunk text-accent">
                   <f.icon size={22} weight="duotone" />

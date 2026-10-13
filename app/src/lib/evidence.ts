@@ -1,11 +1,11 @@
-/** Real Monad testnet transactions from docs/deployments.md (Rehearsal and Showcase Clubs, Oct 11 2026). */
+/** Real Monad testnet transactions from docs/deployments.md (Rehearsal, Showcase and Rules Demo Clubs, Oct 11–13 2026). */
 export const EVIDENCE_EXPLORER = "https://testnet.monadvision.com";
 
 export const EVIDENCE = [
   {
-    title: "The manager rebalances inside the rules",
-    body: "It trims the overweight gold sleeve on its own, committing a fingerprint of its plan. In this rehearsal the plan was scripted rather than written by the model.",
-    hash: "0x71e4516824d31c87ed77ddc60dc843f29fe8271f4c6b5268aca48fc78de87885",
+    title: "Qwen 3.8 Max rebalances inside the rules",
+    body: "A real gold move pushed the group out of range. The live model sold exactly the 10% single-trade cap, simulated it against the contract, got OK and executed, committing a fingerprint of its reasoning and its model id.",
+    hash: "0xf52978a4ce315959991b6a596a72477c37bc1a690ac4491fe27b4c6d94576662",
     verify: true,
     tone: "accent",
   },
@@ -38,6 +38,30 @@ export const EVIDENCE = [
     title: "The group's decision is carried out",
     body: "After quorum, the proposal executes and re-checks the allowlist and price freshness.",
     hash: "0x1e249b939612de9df9ba8019df7033fbe0427314c044863b4de2df24a9f7ce91",
+    tone: "accent",
+  },
+  {
+    title: "Two-thirds of members change the rules",
+    body: "A rule change needs a supermajority, then waits out a delay before it applies. One approval of three was not enough; two passed it.",
+    hash: "0x471adcfc4afebd34a1a91816aa9c13e7171a12d563adc1af15ced46ac86de0cf",
+    tone: "accent",
+  },
+  {
+    title: "A member who disagrees leaves free of charge",
+    body: "While new rules wait to apply, anyone can withdraw everything and leave with no fee, so a majority can't trap a minority.",
+    hash: "0xe1732b5aa735b7cdb2a081525b0cec12eac784d2b29310602d5586cd23bb87db",
+    tone: "accent",
+  },
+  {
+    title: "Leaving mid-period pays a fair fee",
+    body: "Outside the free window after each period, leaving costs the group's fee (2% here): 7.50 stayed with the members who remain, 2.50 went to Plenum.",
+    hash: "0xc4ff153bd53ac6c93bf957a04688fa1caf21c63ee59d4c54e812c3e6f5288c3f",
+    tone: "warn",
+  },
+  {
+    title: "Members replace the AI manager",
+    body: "Two-thirds voted in a different manager key. It took over at once with exactly the same limits; the old key lost all access.",
+    hash: "0x8e54bd4388037b1955cab30f55e9f14e43d7d8dafd86c3537eb14c9b0c3220e5",
     tone: "accent",
   },
   {

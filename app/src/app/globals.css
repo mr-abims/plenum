@@ -63,6 +63,8 @@ html {
 }
 body {
   background: var(--page);
+  /* Decorative backdrops (hero grid) may bleed past the edge; never let them cause sideways scroll on phones. */
+  overflow-x: clip;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

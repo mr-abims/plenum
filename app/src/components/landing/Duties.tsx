@@ -71,7 +71,7 @@ export function Duties() {
           icon={<Fingerprint size={22} weight="duotone" />}
           duty="Own & decide"
           who="Members, or just you, signing with passkeys"
-          body="Members approve anything outside the rules, and any few of them can pause the manager instantly. In a personal portfolio, that is just you. No seed phrases, no extensions."
+          body="Members approve anything outside the rules, can pause the manager instantly, change the rules by a two-thirds vote, or replace the manager outright. In a personal portfolio, that is just you. No seed phrases, no extensions."
           contract="Governance"
           tint="bg-accent-soft border-accent/20"
           visual={
