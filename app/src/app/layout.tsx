@@ -17,22 +17,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0c0e0d" },
-    { media: "(prefers-color-scheme: light)", color: "#f3f4f1" },
-  ],
+  themeColor: "#0c0e0d",
+  colorScheme: "dark",
 };
-
-// Applies the saved theme before first paint so there is no flash between themes.
-const themeScript = `try{var t=localStorage.getItem("plenum.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   return (
     <html lang={locale} className={`${sans.variable} ${mono.variable} ${display.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="grain min-h-dvh">
         <NextIntlClientProvider>
           <SessionProvider>

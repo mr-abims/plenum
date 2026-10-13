@@ -3,8 +3,7 @@
 /*
  * Plenum design tokens: "The Chamber".
  * Graphite instrument surfaces, one locked accent ("mandate lime" = inside the rules),
- * semantic colours kept separate from the accent. Dark is the default; light follows the
- * system setting or the header toggle (data-theme on <html>).
+ * semantic colours kept separate from the accent. One dark theme only.
  */
 :root {
   color-scheme: dark;
@@ -29,52 +28,6 @@
   --grain-opacity: 0.035;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --page: #f3f4f1;
-    --raised: #fbfbf9;
-    --sunk: #e9ebe6;
-    --well: #e4e7e1;
-    --line: #dadfd7;
-    --line-strong: #c4cabf;
-    --ink: #0f1210;
-    --muted: #565d55;
-    --faint: #7d8479;
-    --accent: #4a6400;
-    --accent-ink: #f6fbe9;
-    --accent-soft: rgb(74 100 0 / 0.1);
-    --ok: #3f6a00;
-    --warn: #9a6200;
-    --bad: #c2321f;
-    --mock: #6b4fc0;
-    --info: #2d58c8;
-    --shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 20px 40px -28px rgb(24 32 20 / 0.35);
-    --grain-opacity: 0;
-  }
-}
-:root[data-theme="light"] {
-  color-scheme: light;
-  --page: #f3f4f1;
-  --raised: #fbfbf9;
-  --sunk: #e9ebe6;
-  --well: #e4e7e1;
-  --line: #dadfd7;
-  --line-strong: #c4cabf;
-  --ink: #0f1210;
-  --muted: #565d55;
-  --faint: #7d8479;
-  --accent: #4a6400;
-  --accent-ink: #f6fbe9;
-  --accent-soft: rgb(74 100 0 / 0.1);
-  --ok: #3f6a00;
-  --warn: #9a6200;
-  --bad: #c2321f;
-  --mock: #6b4fc0;
-  --info: #2d58c8;
-  --shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 20px 40px -28px rgb(24 32 20 / 0.35);
-  --grain-opacity: 0;
-}
 
 @theme inline {
   --color-page: var(--page);
@@ -130,7 +83,7 @@ body {
   border-radius: 6px;
 }
 
-/* Film grain: fixed, non-interactive, dark theme only (opacity token is 0 in light). */
+/* Film grain: fixed, non-interactive. */
 .grain::after {
   content: "";
   position: fixed;

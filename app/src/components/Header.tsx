@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Fingerprint, Moon, SignOut, Sun } from "@phosphor-icons/react";
+import { Fingerprint, SignOut } from "@phosphor-icons/react";
 import { useSession } from "@/lib/session";
 import { short } from "@/lib/format";
 import { CHAIN } from "@/lib/config";
@@ -34,7 +34,6 @@ export function Header() {
         ) : null}
         <div className="flex items-center gap-2 sm:gap-3">
           <NetworkPill />
-          <ThemeToggle />
           {session ? (
             <div className="flex items-center gap-1">
               <Link href="/start" className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3 text-sm transition hover:border-line-strong">
@@ -97,23 +96,3 @@ function NetworkPill() {
   );
 }
 
-function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
-  useEffect(() => {
-    const set = document.documentElement.dataset.theme;
-    setTheme(set === "light" || set === "dark" ? set : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-  }, []);
-  const flip = () => {
-    const next = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("plenum.theme", next);
-    } catch {}
-    setTheme(next);
-  };
-  return (
-    <button onClick={flip} aria-label="Switch colour theme" className="grid size-9 place-items-center rounded-full text-muted transition hover:bg-well hover:text-ink">
-      {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
-    </button>
-  );
-}
