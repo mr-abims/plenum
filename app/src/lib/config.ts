@@ -12,7 +12,10 @@ export const DEPLOYMENT = deployment as unknown as {
   tbillVault: Address;
   creditVault: Address;
   gold: Address;
+  /** Creates new groups (second generation, SPEC A26). */
   factory: Address;
+  /** First-generation factory; its groups keep fixed rules but still verify and index. */
+  factoryV1?: Address;
   /** Demo group used by the landing page for live reads (Rehearsal.s.sol). */
   rehearsalPlenum?: Address;
   /** Long-lived group the landing page's rule console asks live (Showcase.s.sol). */

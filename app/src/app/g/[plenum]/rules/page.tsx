@@ -1,28 +1,68 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { Address as Addr } from "viem";
-import { ArrowsLeftRight, Clock, Coins, Gavel, HandPalm, Hourglass, Prohibit, Scales, Swap, UserSwitch } from "@phosphor-icons/react";
+import { ArrowRight, ArrowsLeftRight, CalendarBlank, Clock, Coins, Gavel, HandPalm, Hourglass, PencilSimple, Prohibit, Scales, Swap, UserSwitch } from "@phosphor-icons/react";
+import { mandateAbi } from "@plenum/abis";
 import { Address } from "@/components/Address";
 import { ChamberDial, rowsFromPlenum } from "@/components/ChamberDial";
 import { SkeletonPanel } from "@/components/Skeleton";
-import { Card, Chip, MockTag, PageHeader } from "@/components/ui";
-import { pct } from "@/lib/format";
+import { TxSteps } from "@/components/TxSteps";
+import { Button, Card, Chip, MockTag, PageHeader } from "@/components/ui";
+import { send } from "@/lib/chain";
+import { duration, inTimeZone, pct, until } from "@/lib/format";
+import { configDiff } from "@/lib/rules";
+import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
-
-const duration = (s: number) => (s >= 3600 ? `${s / 3600} hour${s === 3600 ? "" : "s"}` : `${Math.round(s / 60)} minute${s === 60 ? "" : "s"}`);
+import { useTx } from "@/lib/useTx";
 
 export default function RulesPage() {
   const { plenum } = useParams<{ plenum: Addr }>();
-  const { state: p } = usePlenum(plenum);
+  const { state: p, position, refresh } = usePlenum(plenum);
+  const { session } = useSession();
+  const tx = useTx();
   if (!p) return <SkeletonPanel lines={8} />;
+  const member = !!(session && position?.isMember);
+  const fee = (bps: number) => pct(bps, bps % 100 ? 1 : 0);
+  const apply = () =>
+    session &&
+    tx
+      .run([{ label: "Apply the new rules", run: (sent) => send(session.account, { address: p.mandate, abi: mandateAbi, functionName: "applyChange", args: [] }, sent) }])
+      .then(async (ok) => {
+        if (ok) await refresh();
+      });
 
   return (
     <div className="space-y-8">
       <PageHeader title="The group's mandate" lead="These rules are checked by the contracts before every action. The AI manager can't change them, and can't act outside them without you.">
         <Address value={p.mandate} />
       </PageHeader>
+
+      {p.pendingChange ? (
+        <Card className="space-y-4 border-accent/40">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-display text-xl font-semibold tracking-tight">New rules, passed by the members</p>
+              <p className="mt-1 text-sm text-muted">
+                {p.pendingChange.eta <= p.now ? "The waiting period is over: anyone can apply them now." : `They apply ${until(p.pendingChange.eta, p.now)} (${inTimeZone(p.pendingChange.eta)}). Until then, anyone can leave free of charge.`}
+              </p>
+            </div>
+            {member && p.pendingChange.eta <= p.now ? (
+              <Button busy={tx.busy} disabled={tx.busy} onClick={apply}>
+                Apply the new rules
+              </Button>
+            ) : null}
+          </div>
+          <ul className="space-y-1.5 font-mono text-xs text-muted">
+            {configDiff(p.config, p.pendingChange.config).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <TxSteps steps={tx.steps} error={tx.error} />
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="flex flex-col items-center justify-center">
@@ -86,12 +126,42 @@ export default function RulesPage() {
               Pause the manager, instantly
               <Value>any {p.pauseQuorum} members</Value>
             </Clause>
-            <Clause icon={<UserSwitch size={16} />}>
-              <span className="flex flex-wrap items-center gap-2">
-                Replace the manager or change these rules <Chip>Roadmap</Chip>
-              </span>
-              <Value>supermajority plus a 48-hour delay. Today, members can always pause.</Value>
-            </Clause>
+            {p.v2 ? (
+              <>
+                <Clause icon={<PencilSimple size={16} />}>
+                  Change these rules
+                  <Value>
+                    {p.personal ? "you alone" : `${pct(p.mandateChangeBps, 0)} of members`}, then a {duration(p.timelock)} wait before they apply; leaving is free during the wait
+                  </Value>
+                </Clause>
+                <Clause icon={<UserSwitch size={16} />}>
+                  Replace the AI manager
+                  <Value>{p.personal ? "you alone" : `${pct(p.mandateChangeBps, 0)} of members`}, effective at once</Value>
+                </Clause>
+                <Clause icon={<CalendarBlank size={16} />}>
+                  Investment period
+                  <Value>
+                    {p.periodLength
+                      ? `${duration(p.periodLength)}, renewing; free to leave for ${duration(p.exitWindow)} after each period, otherwise a ${fee(p.earlyExitFeeBps)} fee${p.personal ? " to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} stays with the group, ${pct(p.protocolFeeCutBps, 0)} to Plenum`}`
+                      : "none: leaving is always free"}
+                  </Value>
+                </Clause>
+                {member && !p.pendingChange ? (
+                  <li>
+                    <Link href={`/g/${plenum}/rules/change`} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line-strong px-4 text-sm transition hover:border-accent hover:text-accent">
+                      Propose a change <ArrowRight size={15} />
+                    </Link>
+                  </li>
+                ) : null}
+              </>
+            ) : (
+              <Clause icon={<UserSwitch size={16} />}>
+                <span className="flex flex-wrap items-center gap-2">
+                  Replace the manager or change these rules <Chip>Not for this group</Chip>
+                </span>
+                <Value>This group was created before rule changes shipped (Oct 13), so its rules are fixed. Members can always pause.</Value>
+              </Clause>
+            )}
           </Group>
         </Card>
       </div>

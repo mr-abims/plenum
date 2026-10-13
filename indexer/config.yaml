@@ -20,6 +20,13 @@ contracts:
       - event: Contributed
       - event: Redeemed
       - event: ActionExecuted
+      - event: ExitFeeCharged
+      - event: MemberLeft
+  - name: Mandate
+    abi_file_path: ./abis/Mandate.json
+    events:
+      - event: MandateChangeScheduled
+      - event: MandateChangeApplied
   - name: ManagerGateway
     abi_file_path: ./abis/ManagerGateway.json
     events:
@@ -33,6 +40,8 @@ contracts:
       - event: Paused
       - event: Unpaused
       - event: ManagerReplaced
+      - event: MandateChangeProposed
+      - event: ManagerReplacementProposed
   - name: NavOracle
     abi_file_path: ./abis/NavOracle.json
     events:
@@ -52,13 +61,15 @@ chains:
       - url: https://testnet-rpc.monad.xyz
         for: fallback
     contracts:
+      # Every factory generation (SPEC A26 added the second); groups from both are indexed.
       - name: PlenumFactory
-        address: "0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649"
+        address: ["0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649", "0x5BC78c3784Fda7C15b6D586B9d21CA02De760E8D"]
       - name: NavOracle
         address: "0x925ce04252f13c24544009294E0C296D7C357cf4"
       - name: ConsentRegistry
         address: "0xE0F8572E251eC25A3C884278Fd2669163245c900"
-      # Plenum, ManagerGateway and Governance are per-group clones registered from PlenumCreated.
+      # Plenum, Mandate, ManagerGateway and Governance are per-group clones registered from PlenumCreated.
       - name: Plenum
+      - name: Mandate
       - name: ManagerGateway
       - name: Governance

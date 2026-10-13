@@ -11,6 +11,11 @@ type Plenum {
   memberCount: Int!
   totalUnits: BigInt!
   paused: Boolean!
+  # SPEC A26: breaking fees kept by the group (shared pro-rata) and sent to the protocol treasury.
+  feesToGroup: BigInt!
+  feesToTreasury: BigInt!
+  # When a rule change the members passed can apply; null when none is pending.
+  pendingRuleChangeEta: BigInt
   members: [Member!]! @derivedFrom(field: "plenum")
   managerActions: [ManagerAction!]! @derivedFrom(field: "plenum")
   proposals: [Proposal!]! @derivedFrom(field: "plenum")
@@ -22,7 +27,7 @@ type Plenum {
 type ContractLink {
   id: ID! # clone address
   plenum_id: String!
-  kind: String! # GATEWAY | GOVERNANCE
+  kind: String! # GATEWAY | GOVERNANCE | MANDATE
 }
 
 type Member {
@@ -33,6 +38,8 @@ type Member {
   units: BigInt!
   contributed: BigInt!
   redeemed: BigInt!
+  feesPaid: BigInt!
+  active: Boolean! # false after the member left
   joinedAt: BigInt!
 }
 
@@ -52,7 +59,9 @@ type Proposal {
   id: ID! # governance-proposalId
   plenum: Plenum!
   proposalId: BigInt!
-  actionsHash: String!
+  kind: String! # ACTIONS | RULE_CHANGE | REPLACE_MANAGER
+  newManager: String
+  actionsHash: String! # keccak of the actions, the new config, or the new manager
   rationaleHash: String!
   approvals: Int!
   executed: Boolean!
@@ -91,7 +100,7 @@ type ConsentGrant {
 type Activity {
   id: ID!
   plenum: Plenum!
-  kind: String! # CONTRIBUTED | REDEEMED | JOINED | MANAGER_ACTION | ESCALATED | APPROVED | EXECUTED | PAUSED | UNPAUSED | NAV | ADAPTER
+  kind: String! # CONTRIBUTED | REDEEMED | JOINED | LEFT | EXIT_FEE | MANAGER_ACTION | ESCALATED | APPROVED | EXECUTED | PAUSED | UNPAUSED | NAV | ADAPTER | RULE_PROPOSED | RULE_SCHEDULED | RULE_APPLIED | MANAGER_PROPOSED | MANAGER_REPLACED
   actor: String!
   amount: BigInt
   detail: String!

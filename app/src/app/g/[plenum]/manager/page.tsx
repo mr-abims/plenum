@@ -2,23 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
-import type { Address as Addr } from "viem";
-import { Check, Fingerprint, Robot, SealCheck, X } from "@phosphor-icons/react";
+import { isAddress, type Address as Addr } from "viem";
+import { Check, Fingerprint, Robot, SealCheck, UserSwitch, X } from "@phosphor-icons/react";
+import { governanceAbi } from "@plenum/abis";
 import { Address } from "@/components/Address";
 import { AgentIdentity, loadReputation, RateAction, type Summary } from "@/components/ManagerReputation";
 import { MemoView } from "@/components/MemoView";
 import { ReasonChip } from "@/components/ReasonChip";
 import { Skeleton } from "@/components/Skeleton";
-import { Card, Chip, MockTag, Notice, PageHeader, TxLink } from "@/components/ui";
+import { PasskeySheet } from "@/components/PasskeySheet";
+import { TxSteps } from "@/components/TxSteps";
+import { Button, Card, Chip, Field, MockTag, Notice, PageHeader, TxLink, inputClass } from "@/components/ui";
+import { confirmWithPasskey } from "@/lib/account";
+import { send } from "@/lib/chain";
+import { MANAGER_ADDRESS } from "@/lib/config";
 import { loadFeed, type FeedItem } from "@/lib/feed";
 import { feedBody, feedTitle, modelName } from "@/lib/feedText";
-import { inTimeZone, money } from "@/lib/format";
+import { inTimeZone, money, pct } from "@/lib/format";
+import { useTx } from "@/lib/useTx";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
 
-const MANAGER_KINDS = ["MANAGER_ACTION", "ESCALATED", "ADAPTER", "NAV", "PAUSED", "UNPAUSED"];
+const MANAGER_KINDS = ["MANAGER_ACTION", "ESCALATED", "ADAPTER", "NAV", "PAUSED", "UNPAUSED", "MANAGER_PROPOSED", "MANAGER_REPLACED"];
 const FILTERS = [
   { key: "all", label: "Everything", match: () => true },
   { key: "acted", label: "Acted", match: (i: FeedItem) => (i.kind === "MANAGER_ACTION" && i.detail === "OK") || i.kind === "ADAPTER" },
@@ -72,7 +79,11 @@ export default function ManagerPage() {
               <Chip>Autonomy L1</Chip>
             </div>
             <p className="text-xs leading-relaxed text-muted">Acts on its own inside the rules. Asks members for everything else.</p>
-            <AgentIdentity summary={reputation} />
+            {!MANAGER_ADDRESS || p?.manager.toLowerCase() === MANAGER_ADDRESS.toLowerCase() ? (
+              <AgentIdentity summary={reputation} />
+            ) : (
+              <p className="text-xs text-muted">Members replaced Plenum's manager with this key. It has exactly the same limits.</p>
+            )}
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -88,6 +99,8 @@ export default function ManagerPage() {
           />
         </div>
       </Card>
+
+      {p?.v2 ? <ReplaceManager plenum={plenum} /> : null}
 
       <div>
         <div className="rail -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
@@ -180,6 +193,51 @@ export default function ManagerPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Members can vote in a different manager key (SPEC A26); it takes over with exactly the same limits. */
+function ReplaceManager({ plenum }: { plenum: Addr }) {
+  const { state: p, position } = usePlenum(plenum);
+  const { session } = useSession();
+  const router = useRouter();
+  const [next, setNext] = useState("");
+  const tx = useTx();
+  if (!p || !session || !position?.isMember) return null;
+  const invalid = next && !isAddress(next) ? "That isn't a valid address." : next && next.toLowerCase() === p.manager.toLowerCase() ? "That's the current manager." : undefined;
+  const propose = async () => {
+    const ok = await tx.run([
+      { label: "Confirm it's you", kind: "passkey", run: () => confirmWithPasskey(session.account.address) },
+      {
+        label: "Propose the new manager",
+        run: (sent) => send(session.account, { address: p.governance, abi: governanceAbi, functionName: "proposeManagerReplacement", args: [next as Addr, `0x${"00".repeat(32)}`] }, sent),
+      },
+    ]);
+    if (ok) router.push(`/g/${plenum}/approvals`);
+  };
+  return (
+    <Card className="space-y-4">
+      <PasskeySheet open={tx.passkey} action="Proposing a new manager" />
+      <div className="flex gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-sunk text-accent">
+          <UserSwitch size={18} />
+        </span>
+        <div>
+          <p className="font-display text-xl font-semibold tracking-tight">Replace the manager</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            {p.personal ? "You can hand the job to a different manager key at any time." : `If ${pct(p.mandateChangeBps, 0)} of members agree, a different manager key takes over.`} It gets exactly the same limits;
+            the current one loses all access at once.
+          </p>
+        </div>
+      </div>
+      <Field label="New manager's address" error={invalid}>
+        <input className={`${inputClass} font-mono`} value={next} onChange={(e) => setNext(e.target.value.trim())} placeholder="0x…" disabled={tx.busy} />
+      </Field>
+      <Button variant="secondary" busy={tx.busy} disabled={!next || !!invalid || tx.busy} onClick={propose}>
+        Propose this manager
+      </Button>
+      <TxSteps steps={tx.steps} error={tx.error} />
+    </Card>
   );
 }
 

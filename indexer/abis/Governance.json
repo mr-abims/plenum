@@ -128,8 +128,152 @@
   },
   {
     "type": "function",
+    "name": "kindOf",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum Governance.Kind"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "mandate",
     "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mandateChangeOf",
+    "inputs": [
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct MandateConfig",
+        "components": [
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "address[]"
+          },
+          {
+            "name": "targetBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "bandBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "minLiquidityBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxTradeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxDailyTurnoverBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "navMaxAge",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "cooldown",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxMembers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "escalateQuorumBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "mandateChangeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "timelock",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "pauseQuorum",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "votingPeriod",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "periodLength",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "exitWindow",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "earlyExitFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "newManagerOf",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -298,6 +442,141 @@
   },
   {
     "type": "function",
+    "name": "proposeManagerReplacement",
+    "inputs": [
+      {
+        "name": "newManager",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "rationaleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "proposeMandateChange",
+    "inputs": [
+      {
+        "name": "config_",
+        "type": "tuple",
+        "internalType": "struct MandateConfig",
+        "components": [
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "address[]"
+          },
+          {
+            "name": "targetBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "bandBps",
+            "type": "uint16[]",
+            "internalType": "uint16[]"
+          },
+          {
+            "name": "minLiquidityBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxTradeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "maxDailyTurnoverBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "navMaxAge",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "cooldown",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxMembers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "escalateQuorumBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "mandateChangeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "timelock",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "pauseQuorum",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "votingPeriod",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "periodLength",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "exitWindow",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "earlyExitFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          }
+        ]
+      },
+      {
+        "name": "rationaleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "quorumReached",
     "inputs": [
       {
@@ -314,19 +593,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "replaceManager",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -437,6 +703,56 @@
   },
   {
     "type": "event",
+    "name": "ManagerReplacementProposed",
+    "inputs": [
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newManager",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "rationaleHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MandateChangeProposed",
+    "inputs": [
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "configHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "rationaleHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Paused",
     "inputs": [
       {
@@ -504,11 +820,6 @@
   {
     "type": "error",
     "name": "InvalidInitialization",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "NotImplemented",
     "inputs": []
   },
   {
@@ -591,5 +902,10 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "ZeroManager",
+    "inputs": []
   }
 ]

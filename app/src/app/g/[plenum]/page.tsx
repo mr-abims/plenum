@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { erc20Abi, isAddress, zeroAddress, type Address } from "viem";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, CheckCircle, Copy, LinkSimple, ShareNetwork } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarBlank, CheckCircle, Copy, LinkSimple, ShareNetwork, SignOut } from "@phosphor-icons/react";
 import { plenumAbi } from "@plenum/abis";
 import { Allocation } from "@/components/Allocation";
 import { ChamberDial, rowsFromPlenum } from "@/components/ChamberDial";
@@ -18,9 +18,9 @@ import { send } from "@/lib/chain";
 import { DEPLOYMENT } from "@/lib/config";
 import { loadFeed, type FeedItem } from "@/lib/feed";
 import { feedTitle } from "@/lib/feedText";
-import { ago, money, parseUsd, pct } from "@/lib/format";
+import { ago, duration, inTimeZone, money, parseUsd, pct, until } from "@/lib/format";
 import { inviteLink, signInvite } from "@/lib/invite";
-import { UNIT } from "@/lib/plenum";
+import { exitQuote, UNIT, type PlenumState } from "@/lib/plenum";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
 import { useTx } from "@/lib/useTx";
@@ -100,6 +100,8 @@ function Home() {
         </div>
       </Card>
 
+      {p.v2 && (p.periodLength > 0 || p.pendingChange) ? <PeriodCard p={p} /> : null}
+
       <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
         {position?.isMember && session ? <MoneyPanel plenum={plenum} /> : null}
         <LatestFromManager plenum={plenum} />
@@ -129,6 +131,35 @@ function CreatedBanner({ personal }: { personal: boolean }) {
   );
 }
 
+/** Investment period status (SPEC A26): when the period ends, whether leaving is free right now, and why. */
+function PeriodCard({ p }: { p: PlenumState }) {
+  const free = p.exitFeeNowBps === 0;
+  const windowOpen = free && !p.pendingChange && p.periodLength > 0;
+  const windowCloses = windowOpen ? p.nextPeriodEnd - p.periodLength + p.exitWindow : 0;
+  return (
+    <Card className="flex flex-wrap items-start gap-4">
+      <span className={`grid size-10 shrink-0 place-items-center rounded-xl border ${free ? "border-accent/40 bg-accent-soft text-accent" : "border-line bg-sunk text-muted"}`}>
+        <CalendarBlank size={18} />
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="font-medium">
+          {p.pendingChange
+            ? `Leaving is free until the new rules apply (${until(p.pendingChange.eta, p.now)})`
+            : windowOpen
+              ? `Free exit window is open: closes ${until(windowCloses, p.now)}`
+              : `This period ends ${until(p.nextPeriodEnd, p.now)}`}
+        </p>
+        <p className="text-sm leading-relaxed text-muted">
+          {p.periodLength > 0
+            ? `Money is invested in ${duration(p.periodLength)} periods that renew on their own. For ${duration(p.exitWindow)} after each period ends, anyone can leave free of charge; otherwise leaving costs ${pct(p.earlyExitFeeBps, p.earlyExitFeeBps % 100 ? 1 : 0)}${p.personal ? ", paid to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} of it stays with the members who remain, ${pct(p.protocolFeeCutBps, 0)} goes to Plenum`}.`
+            : "No fixed period: leaving is always free."}
+          {p.periodLength > 0 ? ` Next period ends ${inTimeZone(p.nextPeriodEnd)}.` : ""}
+        </p>
+      </div>
+    </Card>
+  );
+}
+
 function MoneyPanel({ plenum }: { plenum: Address }) {
   const { session, profile, rate } = useSession();
   const { state: p, position, refresh } = usePlenum(plenum);
@@ -147,6 +178,23 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
   }
   if (assets !== null && mode === "in" && assets > position.balance) invalid = "That's more than you have in your account.";
   if (assets !== null && mode === "out" && assets > position.value) invalid = "That's more than your share.";
+  const quote = mode === "out" && assets && !invalid ? exitQuote(p, assets, position.value === 0n ? 0n : (assets * position.units) / position.value) : null;
+  const leaveQuote = exitQuote(p, position.value, position.units);
+  const noun = p.personal ? "portfolio" : "group";
+
+  const leave = async () => {
+    setDone(null);
+    const ok = await tx.run([
+      {
+        label: p.personal ? "Withdraw everything and close the portfolio" : "Withdraw everything and leave the group",
+        run: (sent) => send(session.account, { address: p.address, abi: plenumAbi, functionName: "leave", args: [session.account.address] }, sent),
+      },
+    ]);
+    if (ok) {
+      setDone(`${money(leaveQuote.payout)} is on its way to your account. You're no longer a member of this ${noun}.`);
+      await refresh();
+    }
+  };
 
   const submit = async () => {
     if (!assets) return;
@@ -169,7 +217,11 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
             },
           ]);
     if (ok) {
-      setDone(mode === "in" ? `Contributed ${money(a)}. Your units were priced at the latest independent valuation.` : `${money(a)} is on its way back to your account.`);
+      setDone(
+        mode === "in"
+          ? `Contributed ${money(a)}. Your units were priced at the latest independent valuation.`
+          : `${money(exitQuote(p, a, position.units).payout)} is on its way back to your account.`,
+      );
       setAmount("");
       await refresh();
     }
@@ -230,8 +282,26 @@ function MoneyPanel({ plenum }: { plenum: Address }) {
       <Button className="w-full" size="lg" busy={tx.busy} disabled={!assets || !!invalid || tx.busy || (mode === "out" && position.units === 0n)} onClick={submit}>
         {mode === "in" ? `Contribute${assets && !invalid ? ` ${money(assets)}` : ""}` : `Take out${assets && !invalid ? ` ${money(assets)}` : ""}`}
       </Button>
+      {quote && quote.fee > 0n ? (
+        <Notice tone="warn">
+          Leaving now costs {money(quote.fee)} ({pct(p.exitFeeNowBps, p.exitFeeNowBps % 100 ? 1 : 0)}): you receive {money(quote.payout)}.{" "}
+          {quote.toGroup > 0n ? `${money(quote.toGroup)} stays with the ${noun}, shared by the members who remain; ${money(quote.toTreasury)} goes to Plenum.` : `The fee goes to Plenum.`}{" "}
+          It's free in the {duration(p.exitWindow)} after the period ends ({until(p.nextPeriodEnd, p.now)}).
+        </Notice>
+      ) : null}
       <TxSteps steps={tx.steps} error={tx.error} />
       {done ? <Notice tone="ok">{done}</Notice> : null}
+      {p.v2 && mode === "out" ? (
+        <div className="space-y-3 border-t border-line pt-5">
+          <p className="text-sm leading-relaxed text-muted">
+            {p.personal ? "Close this portfolio: withdraw everything" : "Leave the group: withdraw everything and give up your membership"}
+            {position.value > 0n ? ` (${money(leaveQuote.payout)}${leaveQuote.fee > 0n ? ` after a ${money(leaveQuote.fee)} fee` : ""})` : ""}. Paid from the {noun}'s cash.
+          </p>
+          <Button variant="ghost" busy={tx.busy} disabled={tx.busy} onClick={leave}>
+            <SignOut size={16} /> {p.personal ? "Close portfolio" : "Withdraw everything and leave"}
+          </Button>
+        </div>
+      ) : null}
     </Card>
   );
 }

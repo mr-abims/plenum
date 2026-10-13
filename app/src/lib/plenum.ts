@@ -8,6 +8,7 @@ import {
   plenumAbi,
   OPS,
 } from "@plenum/abis";
+import { readMandateConfig, type MandateConfig } from "@plenum/sdk";
 import { publicClient } from "./chain";
 import { adapterName, DEPLOYMENT } from "./config";
 
@@ -54,6 +55,25 @@ export interface PlenumState {
   votingPeriod: number;
   paused: boolean;
   pauseVotes: number;
+  /** The full onchain config (prefills the rule-change editor). */
+  config: MandateConfig;
+  /** Created by the second factory: rule changes, manager replacement, leaving and periods (SPEC A26). */
+  v2: boolean;
+  /** Chain time of the last read, seconds. */
+  now: number;
+  mandateChangeBps: number;
+  timelock: number;
+  /** Investment period (0 = none), free-exit window and breaking fee. */
+  periodLength: number;
+  exitWindow: number;
+  earlyExitFeeBps: number;
+  /** Fee an exit pays right now (0 inside the window, with no period, or while a rule change is pending). */
+  exitFeeNowBps: number;
+  nextPeriodEnd: number;
+  /** Protocol's share of each breaking fee (the rest stays with the group). */
+  protocolFeeCutBps: number;
+  /** A rule change members passed, waiting out its delay. */
+  pendingChange: { config: MandateConfig; eta: number } | null;
 }
 
 const read = <T,>(address: Address, abi: readonly unknown[], functionName: string, args: readonly unknown[] = []) =>
@@ -70,22 +90,8 @@ export async function loadPlenum(address: Address): Promise<PlenumState> {
     read<bigint>(address, plenumAbi, "totalUnits"),
     read<bigint>(address, plenumAbi, "cash"),
   ]);
-  type Cfg = {
-    adapters: readonly Address[];
-    targetBps: readonly number[];
-    bandBps: readonly number[];
-    minLiquidityBps: number;
-    maxTradeBps: number;
-    maxDailyTurnoverBps: number;
-    navMaxAge: number;
-    cooldown: number;
-    escalateQuorumBps: number;
-    pauseQuorum: number;
-    votingPeriod: number;
-      maxMembers: number;
-  };
-  const [config, report, manager, paused, pauseVotes, block] = await Promise.all([
-    read<Cfg>(mandate, mandateAbi, "config"),
+  const [{ config, v2 }, report, manager, paused, pauseVotes, block] = await Promise.all([
+    readMandateConfig(publicClient as never, mandate),
     read<{ nav: bigint; timestamp: bigint; source: number }>(DEPLOYMENT.navOracle, navOracleAbi, "latest", [address]),
     read<Address>(gateway, managerGatewayAbi, "manager"),
     read<boolean>(governance, governanceAbi, "paused"),
@@ -101,6 +107,14 @@ export async function loadPlenum(address: Address): Promise<PlenumState> {
       return { a, value, pending };
     }),
   );
+  const [exitFeeNowBps, nextPeriodEnd, pending, protocolFeeCutBps] = v2
+    ? await Promise.all([
+        read<number>(mandate, mandateAbi, "exitFeeBps"),
+        read<bigint>(mandate, mandateAbi, "nextPeriodEnd"),
+        read<readonly [MandateConfig, bigint]>(mandate, mandateAbi, "pendingChange"),
+        read<number>(address, plenumAbi, "protocolFeeCutBps"),
+      ])
+    : [0, 0n, null, 0];
   const total = values.reduce((t, v) => t + v.value + v.pending, cash);
   const bps = (x: bigint) => (total === 0n ? 0 : Number((x * BPS) / total));
   const sleeves = values.map(({ a, value, pending }, i) => {
@@ -144,7 +158,27 @@ export async function loadPlenum(address: Address): Promise<PlenumState> {
     votingPeriod: config.votingPeriod,
     paused,
     pauseVotes: Number(pauseVotes),
+    config,
+    v2,
+    now,
+    mandateChangeBps: config.mandateChangeBps,
+    timelock: config.timelock,
+    periodLength: config.periodLength,
+    exitWindow: config.exitWindow,
+    earlyExitFeeBps: config.earlyExitFeeBps,
+    exitFeeNowBps: Number(exitFeeNowBps),
+    nextPeriodEnd: Number(nextPeriodEnd),
+    protocolFeeCutBps: Number(protocolFeeCutBps),
+    pendingChange: pending && pending[1] !== 0n ? { config: pending[0], eta: Number(pending[1]) } : null,
   };
+}
+
+/** What leaving or withdrawing `value` costs right now: the fee, and how it splits between the group and Plenum. */
+export function exitQuote(p: PlenumState, value: bigint, units: bigint) {
+  const fee = (value * BigInt(p.exitFeeNowBps)) / BPS;
+  const alone = p.memberCount <= 1 || units === p.totalUnits;
+  const toTreasury = alone ? fee : (fee * BigInt(p.protocolFeeCutBps)) / BPS;
+  return { fee, toTreasury, toGroup: fee - toTreasury, payout: value - fee };
 }
 
 export interface MemberPosition {
@@ -169,6 +203,12 @@ export async function loadPosition(p: PlenumState, member: Address): Promise<Mem
 
 export interface ProposalView {
   id: bigint;
+  /** What the proposal does: run trades, change the rules, or replace the manager (SPEC A26). */
+  kind: "ACTIONS" | "RULE_CHANGE" | "REPLACE_MANAGER";
+  /** Approvals needed, as a share of members (escalation quorum or the rule-change supermajority). */
+  thresholdBps: number;
+  newConfig?: MandateConfig;
+  newManager?: Address;
   actionsHash: string;
   rationaleHash: string;
   proposer: Address;
@@ -185,6 +225,12 @@ export async function loadProposals(p: PlenumState, me?: Address): Promise<Propo
   const ids = Array.from({ length: count }, (_, i) => BigInt(count - i));
   return Promise.all(
     ids.map(async (id) => {
+      const kindIdx = p.v2 ? await read<number>(p.governance, governanceAbi, "kindOf", [id]) : 0;
+      const kind = (["ACTIONS", "RULE_CHANGE", "REPLACE_MANAGER"] as const)[kindIdx] ?? "ACTIONS";
+      const [newConfig, newManager] = await Promise.all([
+        kind === "RULE_CHANGE" ? read<MandateConfig>(p.governance, governanceAbi, "mandateChangeOf", [id]) : undefined,
+        kind === "REPLACE_MANAGER" ? read<Address>(p.governance, governanceAbi, "newManagerOf", [id]) : undefined,
+      ]);
       const [proposal, actions, quorumReached, approvedByMe] = await Promise.all([
         read<readonly [string, string, Address, bigint, number, boolean]>(p.governance, governanceAbi, "proposals", [id]),
         read<readonly { adapter: Address; op: number; assets: bigint }[]>(p.governance, governanceAbi, "actionsOf", [id]),
@@ -194,6 +240,10 @@ export async function loadProposals(p: PlenumState, me?: Address): Promise<Propo
       const [actionsHash, rationaleHash, proposer, deadline, approvals, executed] = proposal;
       return {
         id,
+        kind,
+        thresholdBps: kind === "ACTIONS" ? p.escalateQuorumBps : p.mandateChangeBps,
+        newConfig,
+        newManager,
         actionsHash,
         rationaleHash,
         proposer,

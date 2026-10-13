@@ -5,8 +5,9 @@ import { adapterName, CHAIN, DEPLOYMENT, INDEXER_URL } from "./config";
 import type { PlenumState } from "./plenum";
 
 export type FeedKind =
-  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
-  | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER";
+  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "LEFT" | "EXIT_FEE" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED"
+  | "EXECUTED" | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER" | "RULE_PROPOSED" | "RULE_SCHEDULED" | "RULE_APPLIED"
+  | "MANAGER_PROPOSED" | "MANAGER_REPLACED";
 
 export interface FeedItem {
   id: string;
@@ -70,13 +71,13 @@ async function fromChain(p: PlenumState): Promise<FeedItem[]> {
   const latest = await publicClient.getBlockNumber();
   const start = BigInt(DEPLOYMENT.startBlock);
   const from = CHAIN.id === 31337 ? start : latest > start + TESTNET_LOOKBACK ? latest - TESTNET_LOOKBACK : start;
-  const address = [p.address, p.gateway, p.governance, DEPLOYMENT.navOracle];
+  const address = [p.address, p.gateway, p.governance, p.mandate, DEPLOYMENT.navOracle];
   const raw = [];
   for (let lo = from; lo <= latest; lo += CHAIN.id === 31337 ? latest + 1n : LOG_CHUNK) {
     const hi = CHAIN.id === 31337 ? latest : lo + LOG_CHUNK - 1n > latest ? latest : lo + LOG_CHUNK - 1n;
     raw.push(...(await publicClient.getLogs({ address, fromBlock: lo, toBlock: hi })));
   }
-  const abi = [...plenumAbi, ...managerGatewayAbi, ...governanceAbi, ...navOracleAbi];
+  const abi = [...plenumAbi, ...managerGatewayAbi, ...governanceAbi, ...mandateAbi, ...navOracleAbi];
   const all = raw.flatMap((l) => {
     try {
       const ev = decodeEventLog({ abi, data: l.data, topics: l.topics });
@@ -109,6 +110,15 @@ async function fromChain(p: PlenumState): Promise<FeedItem[]> {
       case "Escalated": items.push({ ...base, kind: "ESCALATED", actor: p.manager, detail: `proposal ${a.proposalId}` }); break;
       case "Approved": items.push({ ...base, kind: "APPROVED", actor: a.member, detail: `proposal ${a.proposalId}` }); break;
       case "ProposalExecuted": items.push({ ...base, kind: "EXECUTED", actor: p.governance, detail: `proposal ${a.proposalId}` }); break;
+      case "MemberLeft": items.push({ ...base, kind: "LEFT", actor: a.member, detail: "left" }); break;
+      case "ExitFeeCharged":
+        items.push({ ...base, kind: "EXIT_FEE", actor: a.member, amount: a.fee, detail: `toGroup=${a.fee - a.toTreasury} toTreasury=${a.toTreasury}` });
+        break;
+      case "MandateChangeProposed": items.push({ ...base, kind: "RULE_PROPOSED", actor: p.governance, detail: `proposal ${a.proposalId}` }); break;
+      case "ManagerReplacementProposed": items.push({ ...base, kind: "MANAGER_PROPOSED", actor: a.newManager, detail: `proposal ${a.proposalId}` }); break;
+      case "ManagerReplaced": items.push({ ...base, kind: "MANAGER_REPLACED", actor: a.newManager, detail: `was ${a.oldManager}` }); break;
+      case "MandateChangeScheduled": items.push({ ...base, kind: "RULE_SCHEDULED", actor: p.mandate, detail: `applies at ${a.eta}` }); break;
+      case "MandateChangeApplied": items.push({ ...base, kind: "RULE_APPLIED", actor: p.mandate, detail: a.configHash }); break;
       case "Paused": items.push({ ...base, kind: "PAUSED", actor: a.by, detail: "manager paused" }); break;
       case "Unpaused": items.push({ ...base, kind: "UNPAUSED", actor: a.by, detail: "manager unpaused" }); break;
       case "NavReported": items.push({ ...base, kind: "NAV", actor: DEPLOYMENT.navOracle, amount: a.nav, detail: a.source === 1 ? "FALLBACK" : "CRE" }); break;
@@ -147,17 +157,20 @@ export interface MyGroup {
  */
 export async function loadMyGroups(member: Address): Promise<MyGroup[]> {
   if (!INDEXER_URL) return [];
-  const query = `query Mine($m: String!) {
-    Member(where: {address: {_eq: $m}}) { plenum { id name memberCount mandate } }
-  }`;
-  const res = await fetch(INDEXER_URL, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query, variables: { m: member.toLowerCase() } }),
-  });
-  const body = (await res.json()) as { data?: { Member: { plenum: { id: Address; name: string; memberCount: number; mandate: Address } }[] } };
-  if (!body.data) throw new Error("indexer unavailable");
-  const plenums = body.data.Member.map((m) => m.plenum);
+  type Body = { data?: { Member: { plenum: { id: Address; name: string; memberCount: number; mandate: Address } }[] } };
+  const ask = async (where: string) => {
+    const query = `query Mine($m: String!) { Member(where: {${where}}) { plenum { id name memberCount mandate } } }`;
+    const res = await fetch(INDEXER_URL!, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query, variables: { m: member.toLowerCase() } }),
+    });
+    return ((await res.json()) as Body).data;
+  };
+  // Members who left are excluded (SPEC A26); an indexer deployed before `active` existed answers the plain query.
+  const data = (await ask("address: {_eq: $m}, active: {_eq: true}")) ?? (await ask("address: {_eq: $m}"));
+  if (!data) throw new Error("indexer unavailable");
+  const plenums = data.Member.map((m) => m.plenum);
   // One batched read per mandate: a member cap of 1 marks a personal portfolio.
   const caps = await Promise.all(
     plenums.map((p) => publicClient.readContract({ address: p.mandate, abi: mandateAbi, functionName: "maxMembers" }).catch(() => 0)),

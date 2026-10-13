@@ -14,8 +14,9 @@ const eid = (e: { chainId: number; transaction: { hash: string }; logIndex: numb
   `${e.chainId}-${e.transaction.hash}-${e.logIndex}`;
 
 type ActivityKind =
-  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED" | "EXECUTED"
-  | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER";
+  | "CONTRIBUTED" | "REDEEMED" | "JOINED" | "LEFT" | "EXIT_FEE" | "MANAGER_ACTION" | "ESCALATED" | "APPROVED"
+  | "EXECUTED" | "PAUSED" | "UNPAUSED" | "NAV" | "ADAPTER" | "RULE_PROPOSED" | "RULE_SCHEDULED" | "RULE_APPLIED"
+  | "MANAGER_PROPOSED" | "MANAGER_REPLACED";
 
 function activity(
   context: { Activity: { set: (a: any) => void } },
@@ -38,7 +39,7 @@ function activity(
   });
 }
 
-/** Per-group clones (gateway, governance) map back to their plenum through ContractLink. */
+/** Per-group clones (gateway, governance, mandate) map back to their plenum through ContractLink. */
 async function plenumOf(context: { ContractLink: { get: (id: string) => Promise<{ plenum_id: string } | undefined> } }, src: string) {
   return (await context.ContractLink.get(lc(src)))?.plenum_id;
 }
@@ -47,6 +48,7 @@ async function plenumOf(context: { ContractLink: { get: (id: string) => Promise<
 
 indexer.contractRegister({ contract: "PlenumFactory", event: "PlenumCreated" }, async ({ event, context }) => {
   context.chain.Plenum.add(event.params.plenum);
+  context.chain.Mandate.add(event.params.mandate);
   context.chain.Governance.add(event.params.governance);
   context.chain.ManagerGateway.add(event.params.gateway);
 });
@@ -65,7 +67,11 @@ indexer.onEvent({ contract: "PlenumFactory", event: "PlenumCreated" }, async ({ 
     memberCount: 0,
     totalUnits: 0n,
     paused: false,
+    feesToGroup: 0n,
+    feesToTreasury: 0n,
+    pendingRuleChangeEta: undefined,
   });
+  context.ContractLink.set({ id: lc(p.mandate), plenum_id: id, kind: "MANDATE" });
   context.ContractLink.set({ id: lc(p.gateway), plenum_id: id, kind: "GATEWAY" });
   context.ContractLink.set({ id: lc(p.governance), plenum_id: id, kind: "GOVERNANCE" });
 });
@@ -75,14 +81,18 @@ indexer.onEvent({ contract: "PlenumFactory", event: "PlenumCreated" }, async ({ 
 indexer.onEvent({ contract: "Plenum", event: "MemberJoined" }, async ({ event, context }) => {
   const plenum = lc(event.srcAddress);
   const address = lc(event.params.member);
+  const id = `${plenum}-${address}`;
+  const before = await context.Member.get(id); // a former member rejoining keeps their history
   context.Member.set({
-    id: `${plenum}-${address}`,
+    id,
     plenum_id: plenum,
     address,
     encPubKey: event.params.encPubKey,
     units: 0n,
-    contributed: 0n,
-    redeemed: 0n,
+    contributed: before?.contributed ?? 0n,
+    redeemed: before?.redeemed ?? 0n,
+    feesPaid: before?.feesPaid ?? 0n,
+    active: true,
     joinedAt: BigInt(event.block.timestamp),
   });
   const p = await context.Plenum.get(plenum);
@@ -110,6 +120,27 @@ indexer.onEvent({ contract: "Plenum", event: "Redeemed" }, async ({ event, conte
   const p = await context.Plenum.get(plenum);
   if (p) context.Plenum.set({ ...p, totalUnits: p.totalUnits - units });
   activity(context, event, plenum, "REDEEMED", member, `paid to ${lc(to)}`, assets);
+});
+
+indexer.onEvent({ contract: "Plenum", event: "ExitFeeCharged" }, async ({ event, context }) => {
+  const plenum = lc(event.srcAddress);
+  const { member, fee, toTreasury } = event.params;
+  const id = `${plenum}-${lc(member)}`;
+  const m = await context.Member.get(id);
+  if (m) context.Member.set({ ...m, feesPaid: m.feesPaid + fee });
+  const p = await context.Plenum.get(plenum);
+  if (p) context.Plenum.set({ ...p, feesToGroup: p.feesToGroup + fee - toTreasury, feesToTreasury: p.feesToTreasury + toTreasury });
+  activity(context, event, plenum, "EXIT_FEE", member, `toGroup=${fee - toTreasury} toTreasury=${toTreasury}`, fee);
+});
+
+indexer.onEvent({ contract: "Plenum", event: "MemberLeft" }, async ({ event, context }) => {
+  const plenum = lc(event.srcAddress);
+  const id = `${plenum}-${lc(event.params.member)}`;
+  const m = await context.Member.get(id);
+  if (m) context.Member.set({ ...m, active: false, units: 0n });
+  const p = await context.Plenum.get(plenum);
+  if (p) context.Plenum.set({ ...p, memberCount: Math.max(0, p.memberCount - 1) });
+  activity(context, event, plenum, "LEFT", event.params.member, "left");
 });
 
 indexer.onEvent({ contract: "Plenum", event: "ActionExecuted" }, async ({ event, context }) => {
@@ -146,6 +177,8 @@ indexer.onEvent({ contract: "Governance", event: "Escalated" }, async ({ event, 
     id: `${lc(event.srcAddress)}-${event.params.proposalId}`,
     plenum_id: plenum,
     proposalId: event.params.proposalId,
+    kind: "ACTIONS",
+    newManager: undefined,
     actionsHash: event.params.actionsHash,
     rationaleHash: event.params.rationaleHash,
     approvals: 0,
@@ -154,6 +187,46 @@ indexer.onEvent({ contract: "Governance", event: "Escalated" }, async ({ event, 
     executedAt: undefined,
   });
   activity(context, event, plenum, "ESCALATED", event.srcAddress, `proposal ${event.params.proposalId}`);
+});
+
+indexer.onEvent({ contract: "Governance", event: "MandateChangeProposed" }, async ({ event, context }) => {
+  const plenum = await plenumOf(context, event.srcAddress);
+  if (!plenum) return;
+  const { proposalId, configHash, rationaleHash } = event.params;
+  context.Proposal.set({
+    id: `${lc(event.srcAddress)}-${proposalId}`,
+    plenum_id: plenum,
+    proposalId,
+    kind: "RULE_CHANGE",
+    newManager: undefined,
+    actionsHash: configHash,
+    rationaleHash,
+    approvals: 0,
+    executed: false,
+    createdAt: BigInt(event.block.timestamp),
+    executedAt: undefined,
+  });
+  activity(context, event, plenum, "RULE_PROPOSED", event.transaction.hash, `proposal ${proposalId}`);
+});
+
+indexer.onEvent({ contract: "Governance", event: "ManagerReplacementProposed" }, async ({ event, context }) => {
+  const plenum = await plenumOf(context, event.srcAddress);
+  if (!plenum) return;
+  const { proposalId, newManager, rationaleHash } = event.params;
+  context.Proposal.set({
+    id: `${lc(event.srcAddress)}-${proposalId}`,
+    plenum_id: plenum,
+    proposalId,
+    kind: "REPLACE_MANAGER",
+    newManager: lc(newManager),
+    actionsHash: "",
+    rationaleHash,
+    approvals: 0,
+    executed: false,
+    createdAt: BigInt(event.block.timestamp),
+    executedAt: undefined,
+  });
+  activity(context, event, plenum, "MANAGER_PROPOSED", newManager, `proposal ${proposalId}`);
 });
 
 indexer.onEvent({ contract: "Governance", event: "Approved" }, async ({ event, context }) => {
@@ -193,7 +266,25 @@ for (const [name, paused] of [["Paused", true], ["Unpaused", false]] as const) {
 indexer.onEvent({ contract: "Governance", event: "ManagerReplaced" }, async ({ event, context }) => {
   const plenum = await plenumOf(context, event.srcAddress);
   if (!plenum) return;
-  activity(context, event, plenum, "MANAGER_ACTION", event.params.newManager, `manager replaced (was ${lc(event.params.oldManager)})`);
+  activity(context, event, plenum, "MANAGER_REPLACED", event.params.newManager, `was ${lc(event.params.oldManager)}`);
+});
+
+// ------------------------------------------------------------------ mandate
+
+indexer.onEvent({ contract: "Mandate", event: "MandateChangeScheduled" }, async ({ event, context }) => {
+  const plenum = await plenumOf(context, event.srcAddress);
+  if (!plenum) return;
+  const p = await context.Plenum.get(plenum);
+  if (p) context.Plenum.set({ ...p, pendingRuleChangeEta: event.params.eta });
+  activity(context, event, plenum, "RULE_SCHEDULED", event.srcAddress, `applies at ${event.params.eta}`);
+});
+
+indexer.onEvent({ contract: "Mandate", event: "MandateChangeApplied" }, async ({ event, context }) => {
+  const plenum = await plenumOf(context, event.srcAddress);
+  if (!plenum) return;
+  const p = await context.Plenum.get(plenum);
+  if (p) context.Plenum.set({ ...p, pendingRuleChangeEta: undefined });
+  activity(context, event, plenum, "RULE_APPLIED", event.srcAddress, event.params.configHash);
 });
 
 // ---------------------------------------------------------- shared singletons

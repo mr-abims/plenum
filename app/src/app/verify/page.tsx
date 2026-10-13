@@ -39,7 +39,7 @@ function Verifier() {
     setError(null);
     setFound(null);
     try {
-      setFound(await verifyAction(publicClient as never, DEPLOYMENT.factory, hash as Hash));
+      setFound(await verifyAction(publicClient as never, [DEPLOYMENT.factory, DEPLOYMENT.factoryV1].filter((f): f is NonNullable<typeof f> => !!f), hash as Hash));
     } catch (e) {
       setError(e instanceof Error ? e.message.split("\n")[0]! : String(e));
     } finally {

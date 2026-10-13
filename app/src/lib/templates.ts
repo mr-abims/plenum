@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import { DEPLOYMENT } from "./config";
 
-/** Mirrors contracts/script/Templates.sol (SPEC §12). Demo timing: 10-min NAV age, 1-min cooldown, 1-hour votes. */
+/** Mirrors contracts/script/Templates.sol (SPEC §12). Demo timing: 10-min NAV age, 1-min cooldown, 1-hour votes, 10-min rule-change wait. */
 export const TEMPLATES = [
   {
     id: 0,
@@ -45,11 +45,25 @@ export const TEMPLATES = [
 
 export type Template = (typeof TEMPLATES)[number];
 
+/** Investment period choices (SPEC A26). The demo period lets a judge see a free-exit window open within minutes. */
+export const PERIODS = [
+  { key: "none", label: "No fixed period", length: 0, window: 0 },
+  { key: "3m", label: "3 months", length: 91 * 86_400, window: 7 * 86_400 },
+  { key: "6m", label: "6 months", length: 182 * 86_400, window: 7 * 86_400 },
+  { key: "12m", label: "12 months", length: 365 * 86_400, window: 7 * 86_400 },
+  { key: "demo", label: "10 minutes (testnet demo)", length: 600, window: 180 },
+] as const;
+export type Period = (typeof PERIODS)[number];
+export const FEES = [50, 100, 200, 500] as const; // breaking fee choices, basis points (cap 1000)
+
 /**
  * Onchain mandate for a template. `personal` makes a portfolio of one (SPEC A23): one member, the owner alone approves
  * escalations and can pause the manager. Same safety bounds as a group.
  */
-export function mandateConfig(t: Template, { demo = true, personal = false }: { demo?: boolean; personal?: boolean } = {}) {
+export function mandateConfig(
+  t: Template,
+  { demo = true, personal = false, period = PERIODS[0], feeBps = 200 }: { demo?: boolean; personal?: boolean; period?: Period; feeBps?: number } = {},
+) {
   return {
     adapters: t.sleeves.map((s) => s.adapter as Address),
     targetBps: t.sleeves.map((s) => s.target),
@@ -61,10 +75,12 @@ export function mandateConfig(t: Template, { demo = true, personal = false }: { 
     cooldown: demo ? 60 : 300,
     maxMembers: personal ? 1 : 99,
     escalateQuorumBps: personal ? 10_000 : demo ? 4000 : 5000,
-    mandateChangeBps: 6667,
-    timelock: 48 * 3600,
-    jurisdictionsRoot: `0x${"00".repeat(32)}` as `0x${string}`,
+    mandateChangeBps: 6666, // two-thirds: 2 of 3, 66 of 99
+    timelock: demo ? 600 : 48 * 3600, // a passed rule change waits this long; exits are free meanwhile
     pauseQuorum: personal ? 1 : 2,
     votingPeriod: demo ? 3600 : 48 * 3600,
+    periodLength: period.length,
+    exitWindow: period.window,
+    earlyExitFeeBps: period.length === 0 ? 0 : feeBps,
   };
 }

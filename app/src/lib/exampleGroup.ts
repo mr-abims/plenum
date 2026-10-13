@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import { adapterName, DEPLOYMENT } from "./config";
 import type { PlenumState } from "./plenum";
-import { TEMPLATES } from "./templates";
+import { mandateConfig, PERIODS, TEMPLATES } from "./templates";
 
 /**
  * EXAMPLE group for the landing page only: a five-member club on the Balanced template (SPEC §1 demo
@@ -55,6 +55,18 @@ export const EXAMPLE_GROUP: PlenumState = {
   votingPeriod: 48 * 3600,
   paused: false,
   pauseVotes: 0,
+  config: mandateConfig(balanced, { period: PERIODS[3] }),
+  v2: true,
+  now: 1_760_000_000,
+  mandateChangeBps: 6666,
+  timelock: 48 * 3600,
+  periodLength: PERIODS[3].length,
+  exitWindow: PERIODS[3].window,
+  earlyExitFeeBps: 200,
+  exitFeeNowBps: 200,
+  nextPeriodEnd: 1_760_000_000 + 200 * 86_400,
+  protocolFeeCutBps: 2500,
+  pendingChange: null,
 };
 
 /** Credit is the async (request-then-claim) adapter; selling it is a RequestRedeem. */

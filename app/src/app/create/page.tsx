@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { decodeEventLog, type Address } from "viem";
-import { ArrowLeft, ArrowRight, Check, Coins, Gavel, HandPalm, Prohibit, Scales, User, UsersThree, Vault } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, CalendarBlank, Check, Coins, Gavel, HandPalm, Prohibit, Scales, SlidersHorizontal, User, UsersThree, Vault } from "@phosphor-icons/react";
 import { plenumAbi, plenumFactoryAbi } from "@plenum/abis";
 import { publicKeyToBytes32 } from "@plenum/crypto";
 import { ChamberDial, rowsFromTemplate } from "@/components/ChamberDial";
@@ -13,12 +13,12 @@ import { TxSteps } from "@/components/TxSteps";
 import { Button, Card, Field, MockTag, inputClass } from "@/components/ui";
 import { publicClient, send } from "@/lib/chain";
 import { adapterName, DEPLOYMENT, MANAGER_ADDRESS } from "@/lib/config";
-import { pct } from "@/lib/format";
+import { duration, pct } from "@/lib/format";
 import { encodeInvite, signInvite } from "@/lib/invite";
 import { AccountSetup } from "@/components/AccountSetup";
 import { useAccountSetup } from "@/lib/useAccountSetup";
 import { useSession } from "@/lib/session";
-import { mandateConfig, TEMPLATES, type Template } from "@/lib/templates";
+import { FEES, mandateConfig, PERIODS, TEMPLATES, type Period, type Template } from "@/lib/templates";
 import { useTx } from "@/lib/useTx";
 
 export default function CreatePage() {
@@ -40,6 +40,8 @@ function Create() {
   const [name, setName] = useState(startPersonal ? "My portfolio" : "");
   const noun = personal ? "portfolio" : "group";
   const [template, setTemplate] = useState<Template>(TEMPLATES[1]);
+  const [period, setPeriod] = useState<Period>(PERIODS[3]);
+  const [feeBps, setFeeBps] = useState<number>(200);
   const tx = useTx();
   const setup = useAccountSetup(session);
 
@@ -65,7 +67,7 @@ function Create() {
           if (!MANAGER_ADDRESS) throw new Error("The AI manager's address is not configured (NEXT_PUBLIC_MANAGER_ADDRESS).");
           const hash = await send(
             session.account,
-            { address: DEPLOYMENT.factory, abi: plenumFactoryAbi, functionName: "createPlenum", args: [name.trim(), template.id, mandateConfig(template, { personal }), MANAGER_ADDRESS] },
+            { address: DEPLOYMENT.factory, abi: plenumFactoryAbi, functionName: "createPlenum", args: [name.trim(), template.id, mandateConfig(template, { personal, period, feeBps }), MANAGER_ADDRESS] },
             sent,
           );
           const receipt = await publicClient.getTransactionReceipt({ hash });
@@ -100,6 +102,21 @@ function Create() {
         : "Anything outside these limits becomes a proposal that members approve with their passkey.",
     },
     { icon: HandPalm, text: personal ? "You can pause the manager instantly." : "Any 2 members can pause the manager instantly." },
+    {
+      icon: CalendarBlank,
+      text:
+        period.length === 0
+          ? `No fixed period: ${personal ? "you" : "members"} can take money out at any time, free.`
+          : `Money is invested in ${period.label.replace(" (testnet demo)", "")} periods that renew on their own. Leaving is free for ${duration(period.window)} after each period ends; at other times it costs ${pct(feeBps, feeBps % 100 ? 1 : 0)}${
+              personal ? ", which goes to Plenum." : ": three quarters stay with the group, shared by the members who remain, and a quarter goes to Plenum."
+            }`,
+    },
+    {
+      icon: SlidersHorizontal,
+      text: personal
+        ? "You can change these rules later; a change waits 10 minutes on testnet (48 hours in production) before it applies."
+        : "Members can change these rules later with two-thirds approval. A change waits 10 minutes on testnet (48 hours in production) before it applies, and anyone can leave free of charge in the meantime.",
+    },
   ];
 
   return (
@@ -239,6 +256,26 @@ function Create() {
                     <p className="text-xs text-muted">{template.title}</p>
                   </ChamberDial>
                 </div>
+                <Field label="Investment period" hint="Members choose at each period end whether to stay or leave free of charge.">
+                  <select className={inputClass} value={period.key} onChange={(e) => setPeriod(PERIODS.find((x) => x.key === e.target.value) ?? PERIODS[0])} disabled={tx.busy}>
+                    {PERIODS.map((x) => (
+                      <option key={x.key} value={x.key}>
+                        {x.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                {period.length > 0 ? (
+                  <Field label="Fee for leaving early" hint={personal ? "Paid to Plenum when you withdraw outside the free window." : "Paid by a member who withdraws outside the free window. Three quarters stay with the group."}>
+                    <select className={inputClass} value={feeBps} onChange={(e) => setFeeBps(Number(e.target.value))} disabled={tx.busy}>
+                      {FEES.map((f) => (
+                        <option key={f} value={f}>
+                          {pct(f, f % 100 ? 1 : 0)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
                 <Field label={personal ? "Portfolio name" : "Group name"} hint={`${personal ? "Shown on your dashboard" : "Members see this name"}. It's stored onchain, so keep personal details out of it.`}>
                   <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={personal ? "My portfolio" : "São Paulo Investment Club"} disabled={tx.busy} />
                 </Field>

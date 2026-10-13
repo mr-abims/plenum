@@ -6,7 +6,7 @@ const chainId = Number(process.argv[2] ?? 10143);
 if (chainId !== 10143 && chainId !== 31337) throw new Error("Monad testnet (10143) or local (31337) only");
 const d = JSON.parse(readFileSync(join(import.meta.dirname, `../../contracts/deployments/${chainId}.json`), "utf8"));
 // The hosted builder only receives this folder, so the ABIs the config uses are copied into ./abis (committed).
-const ABI_NAMES = ["PlenumFactory", "Plenum", "ManagerGateway", "Governance", "NavOracle", "ConsentRegistry"];
+const ABI_NAMES = ["PlenumFactory", "Plenum", "Mandate", "ManagerGateway", "Governance", "NavOracle", "ConsentRegistry"];
 mkdirSync(join(import.meta.dirname, "../abis"), { recursive: true });
 for (const name of ABI_NAMES) {
   copyFileSync(join(import.meta.dirname, `../../packages/abis/json/${name}.json`), join(import.meta.dirname, `../abis/${name}.json`));
@@ -68,6 +68,13 @@ contracts:
       - event: Contributed
       - event: Redeemed
       - event: ActionExecuted
+      - event: ExitFeeCharged
+      - event: MemberLeft
+  - name: Mandate
+    abi_file_path: ${abi("Mandate")}
+    events:
+      - event: MandateChangeScheduled
+      - event: MandateChangeApplied
   - name: ManagerGateway
     abi_file_path: ${abi("ManagerGateway")}
     events:
@@ -81,6 +88,8 @@ contracts:
       - event: Paused
       - event: Unpaused
       - event: ManagerReplaced
+      - event: MandateChangeProposed
+      - event: ManagerReplacementProposed
   - name: NavOracle
     abi_file_path: ${abi("NavOracle")}
     events:
@@ -93,17 +102,19 @@ contracts:
 
 chains:
   - id: ${chainId}
-    start_block: ${d.startBlock}
+    start_block: ${d.factoryV1StartBlock ?? d.startBlock}
 ${chainSource}
     contracts:
+      # Every factory generation (SPEC A26 added the second); groups from both are indexed.
       - name: PlenumFactory
-        address: "${d.factory}"
+        address: [${[d.factoryV1, d.factory].filter(Boolean).map((a) => `"${a}"`).join(", ")}]
       - name: NavOracle
         address: "${d.navOracle}"
       - name: ConsentRegistry
         address: "${d.consentRegistry}"
-      # Plenum, ManagerGateway and Governance are per-group clones registered from PlenumCreated.
+      # Plenum, Mandate, ManagerGateway and Governance are per-group clones registered from PlenumCreated.
       - name: Plenum
+      - name: Mandate
       - name: ManagerGateway
       - name: Governance
 `;

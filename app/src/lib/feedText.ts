@@ -27,6 +27,20 @@ export function feedTitle(i: FeedItem): string {
       return "A member approved";
     case "EXECUTED":
       return "Members' decision carried out";
+    case "LEFT":
+      return "A member left";
+    case "EXIT_FEE":
+      return "Fee for leaving early";
+    case "RULE_PROPOSED":
+      return "New rules proposed";
+    case "RULE_SCHEDULED":
+      return "New rules passed, waiting to apply";
+    case "RULE_APPLIED":
+      return "New rules in force";
+    case "MANAGER_PROPOSED":
+      return "A new manager was proposed";
+    case "MANAGER_REPLACED":
+      return "Members replaced the manager";
   }
 }
 
@@ -43,6 +57,14 @@ export function feedBody(i: FeedItem): string {
         : "Valued by the Chainlink CRE workflow. The manager never writes prices.";
     case "ADAPTER":
       return i.detail;
+    case "EXIT_FEE": {
+      const m = i.detail.match(/toGroup=(\d+) toTreasury=(\d+)/);
+      return m ? `Shared by the members who remain: $${(Number(m[1]) / 1e6).toFixed(2)}. To Plenum: $${(Number(m[2]) / 1e6).toFixed(2)}.` : i.detail;
+    }
+    case "RULE_SCHEDULED":
+      return "Members passed new rules. They apply after the waiting period; anyone can leave free of charge until then.";
+    case "MANAGER_REPLACED":
+      return `A different manager key now runs the money, with the same limits (${i.detail}).`;
     default:
       return i.detail;
   }
