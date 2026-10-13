@@ -27,8 +27,11 @@ function serial<T>(task: () => Promise<T>): Promise<T> {
 
 export async function POST(req: Request) {
   if (DEPLOYMENT.chainId !== monadTestnet.id) return fail("FALLBACK pricing runs on Monad testnet only", 404);
-  const key = process.env.FALLBACK_NAV_WRITER_KEY as Hex | undefined;
-  if (!key) return fail("FALLBACK pricing is not configured", 503);
+  // Tolerate how keys get pasted into hosting dashboards: surrounding quotes, whitespace, a missing 0x.
+  const raw = process.env.FALLBACK_NAV_WRITER_KEY?.trim().replace(/^["']|["']$/g, "");
+  if (!raw) return fail("FALLBACK pricing is not configured", 503);
+  const key = (raw.startsWith("0x") ? raw : `0x${raw}`) as Hex;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(key)) return fail("FALLBACK pricing is misconfigured: the writer key is not a 32-byte hex key", 503);
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success || !isAddress(parsed.data.plenum)) return fail("bad request", 400);
   const plenum = parsed.data.plenum as Address;
