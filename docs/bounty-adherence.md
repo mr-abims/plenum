@@ -107,7 +107,7 @@ refusals), the approvals history and the activity timeline in the live app.
 | Indexer (config, schema, handlers) | [`indexer/`](../indexer) |
 | Hosted on Envio (development plan), synced to Monad testnet | `https://indexer.dev.hyperindex.xyz/04d330b/v1/graphql` |
 | Used by the app's feed (`NEXT_PUBLIC_INDEXER_URL`) | [`app/src/lib/feed.ts`](../app/src/lib/feed.ts) |
-| Feed load time: ~21 ms via Envio vs ~13 s scanning the chain | measured against testnet |
+| Full history since the Oct 11 deploy: one GraphQL query (~0.7 s round trip) vs ~7,300 `eth_getLogs` calls of 100 blocks (~8 min at the public RPC's ~15 req/s) | measured Oct 13 against the hosted endpoint and testnet |
 | Video | ⏳ |
 
 ---
