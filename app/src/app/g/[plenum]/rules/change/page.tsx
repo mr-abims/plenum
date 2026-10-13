@@ -21,6 +21,8 @@ import { FEES, PERIODS } from "@/lib/templates";
 import { usePlenum } from "@/lib/usePlenum";
 import { useTx } from "@/lib/useTx";
 
+/** A cleared number field shows empty (not "0"), so typing "8" gives 8, not 08. */
+const shown = (v: number) => (v === 0 ? "" : v);
 const KNOWN = [DEPLOYMENT.tbillVault, DEPLOYMENT.creditVault, DEPLOYMENT.gold] as Address[];
 type Row = { adapter: Address; on: boolean; target: number; band: number };
 
@@ -80,7 +82,7 @@ export default function ChangeRulesPage() {
   const setRow = (i: number, patch: Partial<Row>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const num = (v: number, set: (n: number) => void, label: string, hint?: string) => (
     <Field label={label} hint={hint}>
-      <input type="number" min={0} max={100} step={0.5} className={`${inputClass} tabular`} value={v} onChange={(e) => set(Number(e.target.value))} disabled={tx.busy} />
+      <input type="number" min={0} max={100} step={0.5} className={`${inputClass} tabular`} value={shown(v)} placeholder="0" onChange={(e) => set(Number(e.target.value))} disabled={tx.busy} />
     </Field>
   );
 
@@ -118,8 +120,8 @@ export default function ChangeRulesPage() {
                   <span className="flex items-center gap-2 text-sm">
                     {adapterName(r.adapter)} <MockTag />
                   </span>
-                  <input type="number" className={`${inputClass} tabular`} value={r.target} min={0} max={100} step={0.5} onChange={(e) => setRow(i, { target: Number(e.target.value) })} disabled={!r.on || tx.busy} aria-label="Target %" />
-                  <input type="number" className={`${inputClass} tabular`} value={r.band} min={0} max={50} step={0.5} onChange={(e) => setRow(i, { band: Number(e.target.value) })} disabled={!r.on || tx.busy} aria-label="Allowed drift ±%" />
+                  <input type="number" className={`${inputClass} tabular`} value={shown(r.target)} placeholder="0" min={0} max={100} step={0.5} onChange={(e) => setRow(i, { target: Number(e.target.value) })} disabled={!r.on || tx.busy} aria-label="Target %" />
+                  <input type="number" className={`${inputClass} tabular`} value={shown(r.band)} placeholder="0" min={0} max={50} step={0.5} onChange={(e) => setRow(i, { band: Number(e.target.value) })} disabled={!r.on || tx.busy} aria-label="Allowed drift ±%" />
                 </li>
               ))}
             </ul>
