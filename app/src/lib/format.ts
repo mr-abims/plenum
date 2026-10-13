@@ -31,15 +31,19 @@ export function parseUsd(input: string): bigint {
   return BigInt(whole!) * USD + BigInt((frac + "000000").slice(0, 6));
 }
 
-/** "7 days", "3 hours", "10 minutes": the largest whole unit. */
+/** "12 months", "7 days", "3 hours", "10 minutes": the largest sensible unit. */
 export function duration(seconds: number): string {
   const unit = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  if (seconds >= 28 * 86_400) return unit(Math.round(seconds / (365.25 * 86_400 / 12)), "month");
   if (seconds >= 86_400 && seconds % 86_400 === 0) return unit(seconds / 86_400, "day");
   if (seconds >= 3600 && seconds % 3600 === 0) return unit(seconds / 3600, "hour");
   if (seconds >= 86_400) return unit(Math.round(seconds / 86_400), "day");
   if (seconds >= 3600) return unit(Math.round(seconds / 3600), "hour");
   return unit(Math.max(1, Math.round(seconds / 60)), "minute");
 }
+
+/** Adjective form: "12-month", "10-minute". */
+export const durationAdj = (seconds: number) => duration(seconds).replace(/^(\d+) (\w+?)s?$/, "$1-$2");
 
 /** Time until `unixSeconds` from `now`, e.g. "in 3 days" or "now". */
 export function until(unixSeconds: number, now: number): string {

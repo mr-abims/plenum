@@ -12,7 +12,7 @@ import { SkeletonPanel } from "@/components/Skeleton";
 import { TxSteps } from "@/components/TxSteps";
 import { Button, Card, Chip, MockTag, PageHeader } from "@/components/ui";
 import { send } from "@/lib/chain";
-import { duration, inTimeZone, pct, until } from "@/lib/format";
+import { duration, durationAdj, inTimeZone, pct, until } from "@/lib/format";
 import { configDiff } from "@/lib/rules";
 import { useSession } from "@/lib/session";
 import { usePlenum } from "@/lib/usePlenum";
@@ -142,7 +142,7 @@ export default function RulesPage() {
                   Investment period
                   <Value>
                     {p.periodLength
-                      ? `${duration(p.periodLength)}, renewing; free to leave for ${duration(p.exitWindow)} after each period, otherwise a ${fee(p.earlyExitFeeBps)} fee${p.personal ? " to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} stays with the group, ${pct(p.protocolFeeCutBps, 0)} to Plenum`}`
+                      ? `${durationAdj(p.periodLength)} periods, renewing; free to leave for ${duration(p.exitWindow)} after each period, otherwise a ${fee(p.earlyExitFeeBps)} fee${p.personal ? " to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} stays with the group, ${pct(p.protocolFeeCutBps, 0)} to Plenum`}`
                       : "none: leaving is always free"}
                   </Value>
                 </Clause>

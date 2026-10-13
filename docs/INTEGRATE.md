@@ -15,7 +15,7 @@ The group app at https://plenumx.vercel.app is the reference client. Contract ad
 
 ## Why not roll your own
 
-- **Bounds proven, not promised.** 7 handler-based invariants (16,384 random calls each) and an 8-scenario red team
+- **Bounds proven, not promised.** 8 handler-based invariants (16,384 random calls each) and an 8-scenario red team
   show the worst a stolen agent key can do is move money between approved assets within caps. It can never withdraw.
 - **Separation of duties built in.** Prices come from a Chainlink CRE workflow (real market data, node consensus), not
   from the agent. Members, not the agent, decide who joins (signed invites) and what's outside the rules.

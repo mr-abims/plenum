@@ -16,6 +16,8 @@ approved, within the size, turnover and cooldown caps. It can never withdraw.** 
 | Withdraw to itself / anyone | No such function; `Plenum.execute` is only callable by gateway/governance and only touches allowlisted adapters | Architecture | invariants 3, 4 |
 | Write NAV | Only the CRE forwarder or the labelled FALLBACK key | `NavOracle` | `test_onReport_rejectsOtherSenders`, `test_fallbackWrite_onlyWriter` |
 | Let someone into a group | No path: `Plenum.join` needs an EIP-712 invite signed by the organizer or a member; the manager is neither | `Plenum.join` | `test_join_outsiderCannotInviteThemselves`, `test_join_*` |
+| Change the rules, or pick its successor | No path: `proposeMandateChange` and `proposeManagerReplacement` are members only; a rule change needs two-thirds of members and waits out the timelock | `Governance`, `Mandate.scheduleChange` (Governance only) | `test_proposeMandateChange_membersOnly`, `test_replaceManager_rules`, `test_scheduleChange_governanceOnly` |
+| Take a breaking fee | No path: fees are charged only inside a member's own `redeem` / `leave`; the treasury gets the factory-fixed cut | `Plenum._redeem` | invariant 8 |
 | Move the gold price | No path: only the CRE forwarder (real spot price, node consensus) or the owner FALLBACK; a report may move it at most 20% | `MockGold._processReport` | `test_gold_crePriceReportGuards` |
 
 Personal portfolios (a plenum of one, SPEC A23) use the same contracts and bounds: `Personal.t.sol` shows the owner
@@ -37,13 +39,14 @@ votes, credit and T-bill drift, time jumps and honest NAV reports. `HandlerProbe
 | 5 | NAV report timestamps strictly increase | PASS |
 | 6 | While paused, every ManagerGateway write reverts | PASS |
 | 7 | Contribute then immediately redeem never returns more than was contributed | PASS |
+| 8 | The treasury only receives breaking fees from member exits, never more than the fee rate, never from a manager action (SPEC A26) | PASS |
 
 Fuzz: unit-math round trip (invariant 7), first-depositor inflation (attacker never profits; victim loss
 ≤ donation / 10^6), `Mandate.check` never reverts on allowlisted input.
 
 ## Test totals
 
-- Contracts: **100 Foundry tests** (unit, fuzz, 7 invariants) across 12 suites.
+- Contracts: **128 Foundry tests** (unit, fuzz, 8 invariants) across 14 suites, including rule changes, manager replacement, leaving and the breaking fee (`RuleChanges.t.sol`, `Exits.t.sol`).
 - Manager runtime: 9 unit tests and the **RT-1..RT-8 red-team suite** (10 cases) against a local chain with a
   deliberately misbehaving model.
 - Data-room crypto: 9 tests, key derivation cross-checked against Node's HKDF/X25519.
@@ -70,6 +73,10 @@ Fuzz: unit-math round trip (invariant 7), first-depositor inflation (attacker ne
 | Bad but in-band allocation by a compromised manager | Bounded by turnover cap per day until members pause |
 | No identity verification (SPEC A25) | Admission is by member-signed invite only; within a group, one person could hold several accounts if members invite them. Bounded by who members choose to invite; regulated deployments would add a KYC check at `join`/`contribute` |
 | Gold price feed manipulated or wrong | CRE takes the median across nodes; `MockGold` rejects stale, future-dated and >20% jumps; the owner FALLBACK can correct it |
+| Majority rewrites the rules against a minority (SPEC A26) | Two-thirds supermajority, then the current timelock (48 h; 10 minutes on testnet demo groups) before anything applies; exits are free while a change is pending, so the minority can leave first. An asset can only be removed once empty |
+| A member approves, then leaves | Accepted: approvals and pause votes already cast still count, while the leaver drops out of the denominator. Bounded by the supermajority and the delay above |
+| Fee waiver by scheduling a change | Only a supermajority-executed change waives fees, and only until it applies (anyone may apply it after the eta) |
+| Exits during a cash shortfall | Exits are paid from cash only (no redemption queue yet); an exit larger than cash reverts with no state change, fee included. Members can propose a sale to raise cash |
 | Testnet faucet drained | Testnet only, test dollars have no value; gas only to accounts that never transacted, and the faucet stops below 0.3 MON |
 
 ## Static analysis (Slither 0.11.5)

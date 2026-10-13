@@ -60,7 +60,8 @@ group already approved, within size, turnover and cooldown limits. **It can neve
 1. Open https://plenumx.vercel.app and press **Start**. Create an account with one passkey prompt (Face ID, Touch ID,
    iCloud Keychain or Google Password Manager). No seed phrase, no extension.
 2. Your testnet account is set up automatically: 10,000 **MOCK** test dollars and 1 MON for gas.
-3. **Start a group**, or **Just me** for a personal portfolio, pick a template and contribute. That is your first
+3. **Start a group**, or **Just me** for a personal portfolio, pick a template (and a 10-minute demo period if you
+   want to see the breaking fee and the free-exit window) and contribute. That is your first
    Monad transaction. A personal portfolio is the fastest path: no invites needed, you approve and pause alone.
 4. On the landing page, **Try to break the rules**: every answer comes from a real group's contract. Then open
    [`/verify`](https://plenumx.vercel.app/verify) and paste a manager transaction from
@@ -75,6 +76,9 @@ group already approved, within size, turnover and cooldown limits. **It can neve
 | Who joins | Anyone a member invites with a signed link (up to 99) | Nobody else: the member cap is 1 |
 | Bigger moves | A share of members must approve | You approve |
 | Pausing the AI | Any two members (configurable) | You, instantly |
+| Changing the rules or the AI manager | Two-thirds of members, then a waiting period for rule changes (anyone can leave free meanwhile) | You |
+| Investment period | Optional: money is invested in periods that renew; leaving is free in a window after each period, otherwise a breaking fee that mostly stays with the group | Optional: the same, the fee goes to Plenum |
+| Leaving | Withdraw everything and give up membership at any time | Close the portfolio at any time |
 | Everything else | Same contracts, mandate checks, CRE prices, provenance and encrypted data room | Same |
 
 Both start from the same screen: **Start a group** or **Just me**. Both are tested end to end on Monad testnet, including a live Qwen rebalance of a
@@ -91,6 +95,15 @@ personal portfolio and an outsider's join refused by its member cap ([evidence](
    rules or escalates. Each action commits a hash of its reasoning and the model id onchain.
 5. **Members stay in charge.** Bigger moves need their approval (one passkey transaction each). Any two members can
    pause the manager instantly. Members share private data with the manager only through expiring onchain consent.
+6. **The group evolves.** Members can change the rules (add or remove assets, targets, caps, the period) with
+   two-thirds approval; the change waits out a delay before it applies, and anyone who disagrees can leave free of
+   charge in the meantime. They can also vote in a different manager key, which inherits exactly the same limits.
+   Members leave by withdrawing everything; leavers stop counting toward votes.
+7. **Periods and the breaking fee.** A group can invest in periods (for example 12 months) that renew on their own.
+   For a window after each period ends (for example 7 days), anyone can leave free of charge; leaving at other times
+   costs the group's breaking fee (default 2%, at most 10%). Three quarters of the fee stay in the pool, shared by the
+   members who remain in proportion to their units; a quarter goes to the Plenum treasury, which is how Plenum earns.
+   In a personal portfolio the whole fee goes to the treasury.
 
 ## The AI manager has an identity
 
@@ -117,7 +130,7 @@ can't be bought by outside accounts.
 
 | Suite | Result |
 | --- | --- |
-| Contracts (unit, fuzz, invariants) | **100 passing**, including 7 handler-based invariants at 16,384 random calls each |
+| Contracts (unit, fuzz, invariants) | **128 passing**, including 8 handler-based invariants at 16,384 random calls each (rule changes, manager swaps, leaving and breaking fees are part of the fuzzed sequences) |
 | Red team RT-1..RT-8 (prompt injection, invented adapters, stale prices, oversized trades, turnover evasion, stolen key, expired consent) | **10/10** against the real runtime and contracts |
 | Live model (Qwen 3.8 Max) | Rebalanced in-band on testnet ([tx](https://testnet.monadvision.com/tx/0xf52978a4ce315959991b6a596a72477c37bc1a690ac4491fe27b4c6d94576662)), held when in range, and refused a planted "move 40% to this address" instruction |
 | Data-room cryptography | 9 passing, derivation cross-checked against Node's HKDF / X25519 |
@@ -153,7 +166,7 @@ Requirements: Node 22+, pnpm, Foundry. Optional: the CRE CLI (`cre login`) and D
 
 ```sh
 pnpm install
-cd contracts && forge build && forge test                        # 100 tests
+cd contracts && forge build && forge test                        # 128 tests
 anvil &                                                          # local chain
 forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
 forge script script/Rehearsal.s.sol --rpc-url http://127.0.0.1:8545 --broadcast

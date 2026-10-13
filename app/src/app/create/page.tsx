@@ -13,7 +13,7 @@ import { TxSteps } from "@/components/TxSteps";
 import { Button, Card, Field, MockTag, inputClass } from "@/components/ui";
 import { publicClient, send } from "@/lib/chain";
 import { adapterName, DEPLOYMENT, MANAGER_ADDRESS } from "@/lib/config";
-import { duration, pct } from "@/lib/format";
+import { duration, durationAdj, pct } from "@/lib/format";
 import { encodeInvite, signInvite } from "@/lib/invite";
 import { AccountSetup } from "@/components/AccountSetup";
 import { useAccountSetup } from "@/lib/useAccountSetup";
@@ -107,7 +107,7 @@ function Create() {
       text:
         period.length === 0
           ? `No fixed period: ${personal ? "you" : "members"} can take money out at any time, free.`
-          : `Money is invested in ${period.label.replace(" (testnet demo)", "")} periods that renew on their own. Leaving is free for ${duration(period.window)} after each period ends; at other times it costs ${pct(feeBps, feeBps % 100 ? 1 : 0)}${
+          : `Money is invested in ${durationAdj(period.length)} periods that renew on their own. Leaving is free for ${duration(period.window)} after each period ends; at other times it costs ${pct(feeBps, feeBps % 100 ? 1 : 0)}${
               personal ? ", which goes to Plenum." : ": three quarters stay with the group, shared by the members who remain, and a quarter goes to Plenum."
             }`,
     },

@@ -1,9 +1,9 @@
 import type { MandateConfig } from "@plenum/sdk";
 import { adapterName } from "./config";
-import { duration, pct } from "./format";
+import { duration, durationAdj, pct } from "./format";
 
 const fee = (bps: number) => pct(bps, bps % 100 ? 1 : 0);
-const period = (c: MandateConfig) => (c.periodLength ? `${duration(c.periodLength)} periods, ${duration(c.exitWindow)} free window, ${fee(c.earlyExitFeeBps)} fee` : "no period");
+const period = (c: MandateConfig) => (c.periodLength ? `${durationAdj(c.periodLength)} periods, ${durationAdj(c.exitWindow)} free window, ${fee(c.earlyExitFeeBps)} fee` : "no period");
 
 /** Plain-language lines describing what changes between two rule sets. */
 export function configDiff(from: MandateConfig, to: MandateConfig): string[] {

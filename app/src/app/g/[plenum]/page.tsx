@@ -18,7 +18,7 @@ import { send } from "@/lib/chain";
 import { DEPLOYMENT } from "@/lib/config";
 import { loadFeed, type FeedItem } from "@/lib/feed";
 import { feedTitle } from "@/lib/feedText";
-import { ago, duration, inTimeZone, money, parseUsd, pct, until } from "@/lib/format";
+import { ago, duration, durationAdj, inTimeZone, money, parseUsd, pct, until } from "@/lib/format";
 import { inviteLink, signInvite } from "@/lib/invite";
 import { exitQuote, UNIT, type PlenumState } from "@/lib/plenum";
 import { useSession } from "@/lib/session";
@@ -151,7 +151,7 @@ function PeriodCard({ p }: { p: PlenumState }) {
         </p>
         <p className="text-sm leading-relaxed text-muted">
           {p.periodLength > 0
-            ? `Money is invested in ${duration(p.periodLength)} periods that renew on their own. For ${duration(p.exitWindow)} after each period ends, anyone can leave free of charge; otherwise leaving costs ${pct(p.earlyExitFeeBps, p.earlyExitFeeBps % 100 ? 1 : 0)}${p.personal ? ", paid to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} of it stays with the members who remain, ${pct(p.protocolFeeCutBps, 0)} goes to Plenum`}.`
+            ? `Money is invested in ${durationAdj(p.periodLength)} periods that renew on their own. For ${duration(p.exitWindow)} after each period ends, anyone can leave free of charge; otherwise leaving costs ${pct(p.earlyExitFeeBps, p.earlyExitFeeBps % 100 ? 1 : 0)}${p.personal ? ", paid to Plenum" : `: ${pct(10_000 - p.protocolFeeCutBps, 0)} of it stays with the members who remain, ${pct(p.protocolFeeCutBps, 0)} goes to Plenum`}.`
             : "No fixed period: leaving is always free."}
           {p.periodLength > 0 ? ` Next period ends ${inTimeZone(p.nextPeriodEnd)}.` : ""}
         </p>

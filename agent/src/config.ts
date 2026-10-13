@@ -40,6 +40,10 @@ export const DeploymentSchema = z.object({
   creditVault: address,
   gold: address,
   factory: address,
+  /** First-generation factory (SPEC A26 added the second, `factory`). */
+  factoryV1: address.optional(),
+  /** Receives the protocol's cut of breaking fees. */
+  treasury: address.optional(),
   /** The manager's ERC-8004 identity (agent NFT id in the canonical IdentityRegistry), set by scripts/register-agent.ts. */
   managerAgentId: z.number().int().nonnegative().optional(),
 });

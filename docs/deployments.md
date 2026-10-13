@@ -17,7 +17,7 @@ deployment (start block 69734135) is superseded; its addresses and transactions 
 | MockTBillVault (MOCK) | [`0x8BAccF02b17e87F0d9DBfcF82FebC6a5C8d9c90A`](https://testnet.monadvision.com/address/0x8BAccF02b17e87F0d9DBfcF82FebC6a5C8d9c90A) |
 | MockCreditVault (MOCK) | [`0xEC02e595cBb542B82C57C7f2431b71da09BCDA50`](https://testnet.monadvision.com/address/0xEC02e595cBb542B82C57C7f2431b71da09BCDA50) |
 | MockGold (MOCK asset, priced at the real spot price by CRE) | [`0x688AFfb0CdF16146BadAFfffC2431F28b9E45E85`](https://testnet.monadvision.com/address/0x688AFfb0CdF16146BadAFfffC2431F28b9E45E85) |
-| PlenumFactory | [`0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649`](https://testnet.monadvision.com/address/0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649) |
+| PlenumFactory (first generation; see the second factory below) | [`0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649`](https://testnet.monadvision.com/address/0xA84fcA0D819E6d1004fa2F2071E51C0fc4408649) |
 
 CRE forwarder configured on `NavOracle` and `MockGold`: `0xB9F79d863261869B234c481D1f9A7af84AeAd192` (CRE mock
 forwarder for `cre workflow simulate --broadcast`). Testnet onboarding faucet (MOCK, mints test dollars, drips gas):
@@ -63,6 +63,41 @@ forwarder for `cre workflow simulate --broadcast`). Testnet onboarding faucet (M
 | The manager registers its ERC-8004 identity (agent #2128, `tokenURI` = agent card) | [0xbb2a824b…](https://testnet.monadvision.com/tx/0xbb2a824bfa8aeb9e8d10b090aba87c205985aa580e9d3e835ea00c4778920503) |
 
 Check any manager transaction above at https://plenumx.vercel.app/verify.
+
+## Second factory: rule changes, manager replacement, leaving, periods (Oct 13, SPEC A26)
+
+Deployed alongside the first factory with `forge create` (start block 70767562) and source-verified on Sourcify. New
+groups are created by this factory; groups from the first factory keep fixed rules and no period. The indexer, the
+app and `/verify` read both. Treasury for the protocol's cut of breaking fees (25% of each fee): the deployer
+`0x5d737A911fb2d404F019ea940Db14fB99a795699` (testnet).
+
+| Contract | Address | Deploy tx |
+| --- | --- | --- |
+| PlenumFactory (second generation) | [`0x5BC78c3784Fda7C15b6D586B9d21CA02De760E8D`](https://testnet.monadvision.com/address/0x5BC78c3784Fda7C15b6D586B9d21CA02De760E8D) | [0xb481f0db…](https://testnet.monadvision.com/tx/0xb481f0db8aad3ec84269b9ff69d018ce69d1722887c7b9a7c6e12997c0ba9a49) |
+| Plenum (implementation) | [`0x98c6a8495267E76ff7885714103CB917A081A206`](https://testnet.monadvision.com/address/0x98c6a8495267E76ff7885714103CB917A081A206) | [0x92e65906…](https://testnet.monadvision.com/tx/0x92e65906c798f7282ea8d22d3fc0b8c04ae0475d29d7584a9063d23569b33f13) |
+| Mandate (implementation) | [`0xB71D4AD667F9c95B1Ad2B6c6F0CAC6AC66aA5a70`](https://testnet.monadvision.com/address/0xB71D4AD667F9c95B1Ad2B6c6F0CAC6AC66aA5a70) | [0xef4fd40e…](https://testnet.monadvision.com/tx/0xef4fd40e5e13e5bf2e135f4b2e3059c781bfe2162e7aece58fed988895026d5b) |
+| Governance (implementation) | [`0x1f25Eac1722ed7b3861063919814F88d751249bb`](https://testnet.monadvision.com/address/0x1f25Eac1722ed7b3861063919814F88d751249bb) | [0x2a5a3ec1…](https://testnet.monadvision.com/tx/0x2a5a3ec1a20472fd39b8ecc209cc93d53ab59cd3b41d26ef71fb6ae6cef3503e) |
+| ManagerGateway (implementation) | [`0x84Cd433Bc39B36E700B298b5FF874f386c100386`](https://testnet.monadvision.com/address/0x84Cd433Bc39B36E700B298b5FF874f386c100386) | [0xd4cbc316…](https://testnet.monadvision.com/tx/0xd4cbc3164930e56d5f8bf5b3cdd66fca5a57f7032309c178a6392c32f0060e5e) |
+
+### Rules Demo Club end to end
+
+Plenum [`0xA04FCCc6238e6F4398e573572aF1Fe985F64454f`](https://testnet.monadvision.com/address/0xA04FCCc6238e6F4398e573572aF1Fe985F64454f), three members, 10-minute investment periods with a 3-minute
+free-exit window, a 2% breaking fee and a 10-minute rule-change delay (testnet demo timing). Prices for this group come
+from the labelled FALLBACK writer. Reproduce with `agent/scripts/v2-lifecycle.ts`.
+
+| What | Transaction |
+| --- | --- |
+| Created from the second factory | [0x21864516…](https://testnet.monadvision.com/tx/0x2186451601e5c58334b355cac41c594d4f50f36f2e6ce77c24011a1178d9271c) |
+| Three members join by invite (A, B, C) | [0x93af2b3d…](https://testnet.monadvision.com/tx/0x93af2b3d6bf30e6343e185b55cbe8a219cc55df870df9895480d2c6e93656769) · [0xb9601013…](https://testnet.monadvision.com/tx/0xb96010133f99ced5972199a55865a73db57af84157e9a3dd7ac8b48c5c9f3858) · [0x50377229…](https://testnet.monadvision.com/tx/0x50377229e0948a4964c1efa75bcb60518854e30a2f39695f105d8e44e92f5d05) |
+| Each contributes 1,000 MOCK test dollars | [0x0cd8f8ba…](https://testnet.monadvision.com/tx/0x0cd8f8ba14be8f96b5dda38b898488296b6e39703546c040a689d2b54e31a96c) · [0x8e4e42dc…](https://testnet.monadvision.com/tx/0x8e4e42dc06911021c8d5e1f8b58340b7371f353a2d88a9ce6ec5478e21d810ed) · [0xac64284f…](https://testnet.monadvision.com/tx/0xac64284fe2e3ac8e5ed4938baed8ef203bba2d67de9c3c3c4ac77b1098c11b0a) |
+| B takes ~500 out mid-period: `ExitFeeCharged` 10 USD (2%), 2.5 to the treasury, 7.5 stays with the group | [0xc4ff153b…](https://testnet.monadvision.com/tx/0xc4ff153bd53ac6c93bf957a04688fa1caf21c63ee59d4c54e812c3e6f5288c3f) |
+| A proposes new rules (one trade at most 8%, fee 1%) | [0x77fb72ab…](https://testnet.monadvision.com/tx/0x77fb72ab7ef3d62a662013d9e55e422230e9df8e22ff613b42d764820fc1f7ea) |
+| A approves (1 of 3: not enough for a rule change), B approves (2 of 3: two-thirds) | [0xf3bbebaf…](https://testnet.monadvision.com/tx/0xf3bbebafddceb957ab855a7f6b52fd98c2096e28aa370b1d48a24f17baa082ff) · [0x233ca5e3…](https://testnet.monadvision.com/tx/0x233ca5e3dc842e2da4b5ad614e2c8b0ef43c82f1ba95b12dc017d733ad7c61de) |
+| Executed: `MandateChangeScheduled`, the new rules wait 10 minutes | [0x471adcfc…](https://testnet.monadvision.com/tx/0x471adcfc4afebd34a1a91816aa9c13e7171a12d563adc1af15ced46ac86de0cf) |
+| C disagrees and leaves during the delay: `MemberLeft`, no fee (exits are free while a change is pending) | [0xe1732b5a…](https://testnet.monadvision.com/tx/0xe1732b5aa735b7cdb2a081525b0cec12eac784d2b29310602d5586cd23bb87db) |
+| A proposes a different manager key for this group; A and B approve | [0xe06441b8…](https://testnet.monadvision.com/tx/0xe06441b8323ca0bc7a3175efc9b77da672dd2b869d4548a6c3ff64d7e4a45f30) · [0x33174d68…](https://testnet.monadvision.com/tx/0x33174d68b9fa3d173519b86b55f0b587d63f6215798c90c9320b3b1ca448d7d3) · [0xd66d457e…](https://testnet.monadvision.com/tx/0xd66d457e849b88afb8481f2719c072e2bc288526aa50d89c7e79be5fb6ecc7f1) |
+| Executed: `ManagerReplaced`, the new key takes over with the same limits (other groups unaffected) | [0x8e54bd43…](https://testnet.monadvision.com/tx/0x8e54bd4388037b1955cab30f55e9f14e43d7d8dafd86c3537eb14c9b0c3220e5) |
+| After the delay, B applies the new rules: `MandateChangeApplied` | [0xcf4ee2c1…](https://testnet.monadvision.com/tx/0xcf4ee2c1b6deeee34ba3e92aaecd795db7e1d5ed2985420294e416d0ef7f6df4) |
 
 ## Personal portfolio end to end (My Portfolio, Oct 13)
 

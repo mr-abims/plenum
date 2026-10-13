@@ -35,7 +35,7 @@ duty the AI could abuse is held by someone else and enforced onchain:
 | Own and decide | Members (Mera passkeys) | `Governance`: approve, pause, (roadmap) replace |
 
 - **Trust:** the worst a fully compromised manager can do is move money between assets the group approved, within
-  caps; it can never withdraw. Proven by 7 invariants over ~16k random calls each and the RT-1..RT-8 red-team suite
+  caps; it can never withdraw. Proven by 8 invariants over ~16k random calls each and the RT-1..RT-8 red-team suite
   ([`docs/threat-model.md`](threat-model.md)).
 - **Provenance:** every manager action commits `keccak256(memo)` and the model id onchain; members decrypt the memo
   and check it against that hash. The public `/verify` page decodes any manager transaction, proves its gateway is a
