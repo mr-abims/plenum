@@ -165,6 +165,7 @@ CI runs the contract, agent, crypto, indexer and app checks on every push.
 Requirements: Node 22+, pnpm, Foundry. Optional: the CRE CLI (`cre login`) and Docker (local indexer).
 
 ```sh
+git submodule update --init --recursive                          # forge-std (or clone with --recurse-submodules)
 pnpm install
 cd contracts && forge build && forge test                        # 128 tests
 anvil &                                                          # local chain
